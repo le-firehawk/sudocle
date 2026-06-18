@@ -24,7 +24,8 @@ export default function RootLayout({
               if (!('_updateTheme' in window)) {
                 window._updateTheme = function updateTheme(theme) {
                   var selectedTheme = theme || ("SudocleSettings" in localStorage ? JSON.parse(localStorage.SudocleSettings).state?.theme : undefined)
-                  if (selectedTheme === "sudocle-dark" || selectedTheme === "dark") {
+                  var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
+                  if (selectedTheme === "sudocle-dark" || selectedTheme === "dark" || (selectedTheme === undefined && prefersDark)) {
                     document.documentElement.classList.add("dark")
                   } else {
                     document.documentElement.classList.remove("dark")

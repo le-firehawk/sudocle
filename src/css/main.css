@@ -87,6 +87,10 @@
       --color-digit-small: rgb(163 187 210);
       --color-button-hover: rgb(112 126 153);
       --color-button-active: rgb(112 126 153);
+      --color-selection-yellow: rgb(184 134 11);
+      --color-selection-red: rgb(220 38 38);
+      --color-selection-green: rgb(22 163 74);
+      --color-selection-blue: rgb(37 99 235);
     }
   }
 }
@@ -192,6 +196,10 @@
     max-width: 100%;
     max-height: 100%;
     overflow: hidden;
+  }
+
+  * {
+    scrollbar-color: var(--color-fg-500) var(--color-grey-700);
   }
 
   a {

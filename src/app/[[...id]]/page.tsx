@@ -738,6 +738,17 @@ const IndexPage = () => {
   ])
 
   useEffect(() => {
+    if (
+      game.data.cells.length === 0 ||
+      game.solved ||
+      game.nextUndoState === 0
+    ) {
+      return
+    }
+    saveGame()
+  }, [game.data.cells.length, game.nextUndoState, game.solved, saveGame])
+
+  useEffect(() => {
     ;(window as any).sudocleConfirmDigit = (action: DigitsAction) => {
       setPendingDigitAction(action)
     }
@@ -758,6 +769,7 @@ const IndexPage = () => {
 
   function onRestart() {
     updateGame({ type: TYPE_INIT, puzzleId: game.puzzleId, data: game.data })
+    updateGame({ type: TYPE_UNPAUSE })
   }
 
   function goHome() {
@@ -816,7 +828,7 @@ const IndexPage = () => {
       >
         {!isTest && <StatusBar />}
         {!isTest && game.mode !== MODE_NORMAL && (
-          <div className="fixed top-(--status-bar-height) left-0 right-0 z-20000 bg-primary text-bg text-center text-[0.65rem] py-1 shadow-sm">
+          <div className="fixed top-(--status-bar-height) left-0 right-0 z-20000 bg-modal-warning text-fg text-center text-[0.65rem] py-2 px-4 shadow-sm dark:bg-primary dark:text-bg">
             In Annotation Mode
           </div>
         )}
@@ -827,7 +839,10 @@ const IndexPage = () => {
         ) : undefined}
         <div
           className={clsx(
-            "w-screen flex justify-center items-center pb-4 md:pb-11 px-2 md:px-12 h-dvh pt-[calc(var(--status-bar-height)+4*var(--spacing))] portrait:flex-col transition-transform duration-300",
+            "w-screen flex justify-center items-center pb-4 md:pb-11 px-2 md:px-12 h-dvh portrait:flex-col transition-transform duration-300",
+            game.mode !== MODE_NORMAL
+              ? "pt-[calc(var(--status-bar-height)+8*var(--spacing))]"
+              : "pt-[calc(var(--status-bar-height)+4*var(--spacing))]",
             sidebarVisible &&
               "md:-translate-x-[min(18rem,calc((100vw-800px)/2))]",
           )}

@@ -170,7 +170,7 @@ const Sidebar = () => {
                   "pointer-events-none",
                   expanded && t.id === activeTabId
                     ? "text-bg"
-                    : "text-fg-500 group-hover:text-primary",
+                    : "text-fg/80 group-hover:text-primary",
                 )}
               >
                 <g transform="translate(25, 47)">{t.icon}</g>
