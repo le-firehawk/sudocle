@@ -19,7 +19,7 @@ const config = {
   },
 }
 
-favicons("../../assets/sudocle-favicon.svg", config, (error, response) => {
+favicons("../assets/sudocle-favicon.svg", config, (error, response) => {
   if (error) {
     console.error(error.message)
     return

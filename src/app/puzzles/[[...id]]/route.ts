@@ -1,4 +1,9 @@
-import emptyGrid from "../../../public/empty-grid.json" assert { type: "json" }
+import emptyGrid from "../../../../public/empty-grid.json" assert { type: "json" }
+import {
+  buildSeedPuzzle,
+  isSeedPuzzleId,
+  randomSeedPuzzleId,
+} from "../../../reuse/seedPuzzle"
 import { NextRequest } from "next/server"
 
 const URLS = [
@@ -6,22 +11,8 @@ const URLS = [
   "https://sudokupad.app/api/puzzle/{}",
 ]
 
-const PRELOAD_PUZZLE_IDS = [
-  "tjN9LtrrTL",
-  "rb7G2grJmN",
-  "QM8RdBLBb9",
-  "Qm88j7J2dt",
-  "6dP4FN27HB",
-]
-
 const MAX_AGE_EMPTY_SECONDS = 1209600 // 14 days
 const MAX_AGE_OTHER = 86400 // 1 day
-
-function randomPreloadPuzzleUrl(): string {
-  let id =
-    PRELOAD_PUZZLE_IDS[Math.floor(Math.random() * PRELOAD_PUZZLE_IDS.length)]
-  return URLS[Math.floor(Math.random() * URLS.length)].replace("{}", id)
-}
 
 async function puzzleResponseFromFetch(
   response: Response,
@@ -36,13 +27,6 @@ async function puzzleResponseFromFetch(
   return r
 }
 
-async function loadPuzzleFromUrl(
-  url: string,
-  cacheControl?: string,
-): Promise<Response | undefined> {
-  return puzzleResponseFromFetch(await fetch(url), cacheControl)
-}
-
 export async function GET(
   _: NextRequest,
   context: { params: Promise<{ id?: string[] }> },
@@ -52,10 +36,11 @@ export async function GET(
   try {
     if (params.id === undefined || params.id.length === 0) {
       if (process.env.PRELOAD_PUZZLES === "1") {
-        let r = await loadPuzzleFromUrl(randomPreloadPuzzleUrl(), "no-store")
-        if (r !== undefined) {
-          return r
-        }
+        let r = new Response(
+          JSON.stringify(buildSeedPuzzle(randomSeedPuzzleId())),
+        )
+        r.headers.set("cache-control", "no-store")
+        return r
       }
 
       let r = new Response(JSON.stringify(emptyGrid))
@@ -73,6 +58,12 @@ export async function GET(
       if (r !== undefined) {
         return r
       }
+    }
+
+    if (isSeedPuzzleId(id)) {
+      let r = new Response(JSON.stringify(buildSeedPuzzle(id)))
+      r.headers.set("cache-control", `max-age=${MAX_AGE_OTHER}`)
+      return r
     }
 
     if (response === undefined) {
