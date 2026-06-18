@@ -44,6 +44,17 @@ const config = {
     disableStaticImages: true,
   },
 
+  async redirects() {
+    return [
+      {
+        source: "/",
+        destination: basePath || "/sudocle",
+        statusCode: 302,
+        basePath: false,
+      },
+    ]
+  },
+
   async headers() {
     return [
       {
