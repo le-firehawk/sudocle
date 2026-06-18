@@ -20,11 +20,15 @@ class RegionElement implements GridElement {
   }
 
   draw(options: { cellSize: number; themeColours: ThemeColours }) {
-    this.graphics.poly(this.region.map(v => v * options.cellSize))
+    let points = this.region.map(v => v * options.cellSize)
+    this.graphics.moveTo(points[0], points[1])
+    for (let i = 2; i < points.length; i += 2) {
+      this.graphics.lineTo(points[i], points[i + 1])
+    }
+    this.graphics.closePath()
     this.graphics.stroke({
-      width: 2,
+      width: 3,
       color: options.themeColours.foregroundColor,
-      alpha: 0.82,
     })
   }
 }

@@ -46,6 +46,7 @@ import parseSolution from "../lib/parsesolution"
 import { hasFog, ktoxy, xytok } from "../lib/utils"
 import { Data, DataCell, FogLight } from "../types/Data"
 import { Digit } from "../types/Game"
+import { useSettings } from "./useSettings"
 import { isEqual, isMap, isPlainObject, isSet, isString } from "lodash"
 import { create } from "zustand"
 import { immer } from "zustand/middleware/immer"
@@ -924,6 +925,22 @@ function makeUndoState(state: PersistentGameState): PersistentGameState {
   }
 }
 
+function shouldConfirmDigit(
+  action: Action,
+  state: GameState,
+): action is DigitsAction {
+  return (
+    action.type === TYPE_DIGITS &&
+    action.action === ACTION_SET &&
+    action.digit !== undefined &&
+    !action.confirmed &&
+    state.mode === MODE_NORMAL &&
+    useSettings.getState().safetyMode &&
+    typeof window !== "undefined" &&
+    typeof (window as any).sudocleConfirmDigit === "function"
+  )
+}
+
 export const useGame = create<GameStateWithActions>()(
   immer((set, get) => ({
     ...makeEmptyState(),
@@ -1028,7 +1045,13 @@ export const useGame = create<GameStateWithActions>()(
       window.localStorage.removeItem(`SudocleSavedGame_${state.puzzleId}`)
     },
 
-    updateGame: (action: Action) =>
+    updateGame: (action: Action) => {
+      let state = get()
+      if (shouldConfirmDigit(action, state)) {
+        ;(window as any).sudocleConfirmDigit(action)
+        return
+      }
+
       set(draft => {
         if (action.type === TYPE_INIT) {
           let canonicalData:
@@ -1216,9 +1239,10 @@ export const useGame = create<GameStateWithActions>()(
         }
 
         if (
-          (action.type === TYPE_DIGITS || action.type === TYPE_COLOURS) &&
-          action.action === ACTION_REMOVE
+          ([TYPE_DIGITS, TYPE_COLOURS] as string[]).includes(action.type) &&
+          (action as DigitsAction | ColoursAction).action === ACTION_REMOVE
         ) {
+          let digitOrColourAction = action as DigitsAction | ColoursAction
           let deleteColour = false
           if (draft.mode === MODE_COLOUR) {
             for (let sc of draft.selection) {
@@ -1243,13 +1267,16 @@ export const useGame = create<GameStateWithActions>()(
               }
             }
             if (highest === MODE_CENTRE) {
-              gameReducerNoUndo(draft, MODE_CORNER, action)
+              gameReducerNoUndo(draft, MODE_CORNER, digitOrColourAction)
             }
           }
           if (highest === MODE_COLOUR) {
-            gameReducerNoUndo(draft, highest, { ...action, type: TYPE_COLOURS })
+            gameReducerNoUndo(draft, highest, {
+              ...digitOrColourAction,
+              type: TYPE_COLOURS,
+            })
           } else {
-            gameReducerNoUndo(draft, highest, action)
+            gameReducerNoUndo(draft, highest, digitOrColourAction)
           }
         } else {
           gameReducerNoUndo(draft, draft.mode, action)
@@ -1267,6 +1294,7 @@ export const useGame = create<GameStateWithActions>()(
           draft.undoStates = newUndoStates
           draft.nextUndoState = draft.nextUndoState + 1
         }
-      }),
+      })
+    },
   })),
 )

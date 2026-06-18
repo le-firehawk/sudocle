@@ -13,6 +13,7 @@ interface Settings {
   fontSizeFactorCentreMarks: number
   penWidth: number
   penOpacity: number
+  safetyMode: boolean
 
   setColourPalette(colourPalette: string): void
   setTheme(theme: string): void
@@ -24,6 +25,7 @@ interface Settings {
   setFontSizeFactorCentreMarks(fontSizeFactorCentreMarks: number): void
   setPenWidth(penWidth: number): void
   setPenOpacity(penOpacity: number): void
+  setSafetyMode(safetyMode: boolean): void
 }
 
 export const useSettings = create<Settings>()(
@@ -39,6 +41,7 @@ export const useSettings = create<Settings>()(
       fontSizeFactorCentreMarks: 1,
       penWidth: 2,
       penOpacity: 1,
+      safetyMode: false,
 
       setColourPalette: (colourPalette: string) => {
         set(draft => {
@@ -89,6 +92,11 @@ export const useSettings = create<Settings>()(
       setPenOpacity: (penOpacity: number) =>
         set(draft => {
           draft.penOpacity = penOpacity
+        }),
+
+      setSafetyMode: (safetyMode: boolean) =>
+        set(draft => {
+          draft.safetyMode = safetyMode
         }),
     })),
     {

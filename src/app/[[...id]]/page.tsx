@@ -20,6 +20,7 @@ import {
   ACTION_ROTATE,
   ACTION_SET,
   ACTION_UP,
+  DigitsAction,
   TYPE_INIT,
   TYPE_MODE,
   TYPE_MODE_GROUP,
@@ -35,14 +36,12 @@ import {
   MODE_NORMAL,
   MODE_PEN,
 } from "../../components/lib/Modes"
-import {
-  buildSeedPuzzle,
-  isSeedPuzzleId,
-} from "../../reuse/seedPuzzle"
 import { convertCTCPuzzle } from "../../components/lib/ctcpuzzleconverter"
 import { convertFPuzzle } from "../../components/lib/fpuzzlesconverter"
 import lzwDecompress from "../../components/lib/lzwdecompressor"
 import { Data } from "../../components/types/Data"
+import Popup from "../../reuse/Popup"
+import { buildSeedPuzzle, isSeedPuzzleId } from "../../reuse/seedPuzzle"
 import { enableMapSet } from "immer"
 import {
   Check,
@@ -102,6 +101,7 @@ const IndexPage = () => {
   const [errorModalOpen, setErrorModalOpen] = useState<boolean>(false)
   const [isTest, setIsTest] = useState(false)
   const [fontsLoaded, setFontsLoaded] = useState(false)
+  const [pendingDigitAction, setPendingDigitAction] = useState<DigitsAction>()
   const didCheckForSavedGame = useRef<boolean>(false)
   const [showHome, setShowHome] = useState(false)
 
@@ -717,6 +717,27 @@ const IndexPage = () => {
     deleteSavedGame,
   ])
 
+  useEffect(() => {
+    ;(window as any).sudocleConfirmDigit = (action: DigitsAction) => {
+      setPendingDigitAction(action)
+    }
+
+    return () => {
+      delete (window as any).sudocleConfirmDigit
+    }
+  }, [])
+
+  function onConfirmSafetyMove() {
+    if (pendingDigitAction === undefined) {
+      return
+    }
+    updateGame({
+      ...pendingDigitAction,
+      confirmed: true,
+    })
+    setPendingDigitAction(undefined)
+  }
+
   if (showHome) {
     return <HomePage />
   }
@@ -730,6 +751,11 @@ const IndexPage = () => {
         ref={appRef}
       >
         {!isTest && <StatusBar />}
+        {!isTest && game.mode !== MODE_NORMAL && (
+          <div className="fixed top-(--status-bar-height) left-0 right-0 z-20000 bg-primary text-bg text-center text-[0.65rem] py-1 shadow-sm">
+            In Annotation Mode
+          </div>
+        )}
         {!error && (rendering || firstResizing) ? (
           <div className="text-fg-500 h-dvh w-dvw bg-bg z-100 justify-center items-center flex">
             <div>Loading ...</div>
@@ -796,6 +822,24 @@ const IndexPage = () => {
         >
           You have solved the puzzle
         </Modal>
+        <Popup
+          isOpen={pendingDigitAction !== undefined}
+          title="Safety check"
+          type="warning"
+          message={`You are about to enter a ${pendingDigitAction?.digit}`}
+          responseButtons={[
+            {
+              label: "Cancel",
+              onClick: () => setPendingDigitAction(undefined),
+            },
+            { label: "Confirm", active: true, onClick: onConfirmSafetyMove },
+          ]}
+          onOpenChange={open => {
+            if (!open) {
+              setPendingDigitAction(undefined)
+            }
+          }}
+        />
         <Modal
           isOpen={errorModalOpen}
           title={

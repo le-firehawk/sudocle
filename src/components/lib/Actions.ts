@@ -46,6 +46,7 @@ export interface DigitsAction {
   readonly type: typeof TYPE_DIGITS
   readonly action: typeof ACTION_SET | typeof ACTION_REMOVE
   readonly digit?: number
+  readonly confirmed?: boolean
 }
 
 export interface ColoursAction {
