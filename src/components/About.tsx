@@ -46,7 +46,7 @@ const About = () => {
         </a>
         . The fork source code is available on{" "}
         <a
-          href="https://github.com/michel-kraemer/sudocle"
+          href="https://github.com/le-firehawk/sudocle"
           target="_blank"
           rel="noreferrer"
         >
