@@ -120,7 +120,7 @@ const Sidebar = () => {
   return (
     <div
       className={clsx(
-        "fixed top-(--status-bar-height) right-0 bottom-0 w-[620px] max-w-full flex z-30000 sidebar-shell",
+        "fixed top-0 right-0 bottom-0 w-[620px] max-w-full flex z-30000 sidebar-shell",
         visible
           ? "translate-x-0 duration-300 ease-in-out transition-transform sidebar-visible"
           : "md:translate-x-[calc(100%-2.5rem)] duration-200 ease-in",
@@ -181,7 +181,7 @@ const Sidebar = () => {
       </div>
       <div
         className={clsx(
-          "bg-bg/75 shadow-[-2px_0_5px_0_rgba(0_0_0/20%)] pt-4 pr-8 pb-8 pl-8 flex-1 opacity-0 transition-opacity duration-150 ease-[cubic-bezier(1,0,1,0)] overflow-y-auto backdrop-blur-xs",
+          "bg-bg/75 shadow-[-2px_0_5px_0_rgba(0_0_0/20%)] pt-[calc(var(--status-bar-height)+4*var(--spacing))] pr-8 pb-8 pl-8 flex-1 opacity-0 transition-opacity duration-150 ease-[cubic-bezier(1,0,1,0)] overflow-y-auto backdrop-blur-xs",
           {
             "opacity-100 duration-0 ease-linear": visible,
             hidden: !expanded,

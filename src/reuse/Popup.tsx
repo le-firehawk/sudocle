@@ -31,7 +31,12 @@ const Popup = ({
   <Dialog.Root open={isOpen} onOpenChange={onOpenChange}>
     <Dialog.Portal>
       <Dialog.Overlay className="fixed inset-0 bg-black/5 flex justify-center items-center z-100000 animate-fade-in">
-        <Dialog.Content className="bg-bg shadow-[0_0_10px_rgba(0_0_0/75%)] focus:outline-hidden text-center rounded overflow-hidden">
+        <Dialog.Content
+          aria-describedby={
+            message === undefined ? undefined : "popup-description"
+          }
+          className="bg-bg shadow-[0_0_10px_rgba(0_0_0/75%)] focus:outline-hidden text-center rounded overflow-hidden"
+        >
           <div
             className={clsx(
               "py-4 px-12",
@@ -46,7 +51,11 @@ const Popup = ({
               {icon !== undefined && <div className="text-xs">{icon}</div>}
               <div className="text-lg leading-6">{title}</div>
             </Dialog.Title>
-            {message !== undefined && <div className="text-xs">{message}</div>}
+            {message !== undefined && (
+              <Dialog.Description id="popup-description" asChild>
+                <div className="text-xs">{message}</div>
+              </Dialog.Description>
+            )}
           </div>
           <div className="max-w-36 my-2 mx-auto flex flex-row justify-end gap-1 text-[0.6rem]">
             {responseButtons.map((button, i) => (

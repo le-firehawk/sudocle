@@ -88,7 +88,13 @@ const IndexPage = () => {
       seedDifficulty: state.seedDifficulty,
     })),
   )
-  const sidebarVisible = useSidebar(state => state.visible)
+  const { sidebarVisible, activeSidebarTabId, onSidebarTabClick } = useSidebar(
+    useShallow(state => ({
+      sidebarVisible: state.visible,
+      activeSidebarTabId: state.activeTabId,
+      onSidebarTabClick: state.onTabClick,
+    })),
+  )
   const appRef = useRef<HTMLDivElement>(null)
   const gameContainerRef = useRef<HTMLDivElement>(null)
   const gridContainerRef = useRef<HTMLDivElement>(null)
@@ -105,7 +111,6 @@ const IndexPage = () => {
   const [fontsLoaded, setFontsLoaded] = useState(false)
   const [pendingDigitAction, setPendingDigitAction] = useState<DigitsAction>()
   const [completionActionsOpen, setCompletionActionsOpen] = useState(false)
-  const [pausedClock, setPausedClock] = useState(new Date())
   const didCheckForSavedGame = useRef<boolean>(false)
   const [showHome, setShowHome] = useState(false)
 
@@ -132,10 +137,13 @@ const IndexPage = () => {
   const onFinishFirstResize = useCallback(() => setFirstResizing(false), [])
 
   const onContinue = useCallback(() => {
+    if (sidebarVisible) {
+      onSidebarTabClick(activeSidebarTabId)
+    }
     updateGame({
       type: TYPE_UNPAUSE,
     })
-  }, [updateGame])
+  }, [activeSidebarTabId, onSidebarTabClick, sidebarVisible, updateGame])
 
   const loadCompressedPuzzleFromString = useCallback(
     (id: string, str: string) => {
@@ -758,16 +766,10 @@ const IndexPage = () => {
     }
   }, [])
 
-  useEffect(() => {
-    if (!paused) {
-      return
-    }
-    setPausedClock(new Date())
-    let interval = window.setInterval(() => setPausedClock(new Date()), 1000)
-    return () => window.clearInterval(interval)
-  }, [paused])
-
   function onRestart() {
+    if (sidebarVisible) {
+      onSidebarTabClick(activeSidebarTabId)
+    }
     updateGame({ type: TYPE_INIT, puzzleId: game.puzzleId, data: game.data })
     updateGame({ type: TYPE_UNPAUSE })
   }
@@ -841,7 +843,7 @@ const IndexPage = () => {
           className={clsx(
             "w-screen flex justify-center items-center pb-4 md:pb-11 px-2 md:px-12 h-dvh portrait:flex-col transition-transform duration-300",
             game.mode !== MODE_NORMAL
-              ? "pt-[calc(var(--status-bar-height)+8*var(--spacing))]"
+              ? "pt-[calc(var(--status-bar-height)+12*var(--spacing))]"
               : "pt-[calc(var(--status-bar-height)+4*var(--spacing))]",
             sidebarVisible &&
               "md:-translate-x-[min(18rem,calc((100vw-800px)/2))]",
@@ -882,7 +884,7 @@ const IndexPage = () => {
                   <Pause size="1.3rem" className="mr-1 mb-px" /> Game paused
                 </div>
                 <div className="text-[0.7rem] mb-4">
-                  {pausedClock.toLocaleTimeString()}
+                  {formatElapsed(game.timerOnPause)}
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-[0.6rem] mt-0.5 w-52">
                   <Button onClick={onContinue}>Continue</Button>
