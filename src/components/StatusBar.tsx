@@ -69,7 +69,7 @@ const StatusBar = () => {
     setSeedDifficulty(difficulty)
     if (isSeedPuzzleId(puzzleId)) {
       let seed = randomSeedPuzzleId()
-      window.location.href = `${process.env.__NEXT_ROUTER_BASEPATH}/${seed}/?difficulty=${difficulty}`
+      window.location.href = `${process.env.__NEXT_ROUTER_BASEPATH}/${seed}/`
     }
   }
 

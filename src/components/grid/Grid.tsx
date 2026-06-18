@@ -908,7 +908,7 @@ const Grid = ({
     givenBackgroundContainer.zIndex = -1
     game.data.cells.forEach((row, y) => {
       row.forEach((col, x) => {
-        let ge = new ColourElement(x, y, 0x9aa6b2, 0.28)
+        let ge = new ColourElement(x, y, 0x6b7280, 0.4)
         ge.visible = col.value !== undefined
         givenBackgroundContainer.addChild(ge.graphics)
         givenBackgroundElements.current.push(ge)

@@ -191,6 +191,13 @@ const Pad = () => {
     })
   }
 
+  const digitCounts = new Map<number, number>()
+  digits.forEach(({ digit }) => {
+    if (typeof digit === "number" && digit >= 1 && digit <= 9) {
+      digitCounts.set(digit, (digitCounts.get(digit) ?? 0) + 1)
+    }
+  })
+
   const digitButtons = []
 
   let modeGroup = getModeGroup(mode)
@@ -198,26 +205,50 @@ const Pad = () => {
     if (mode !== MODE_COLOUR) {
       for (let i = 1; i <= 10; ++i) {
         let digit = i % 10
+        let missing =
+          digit === 0
+            ? undefined
+            : Math.max(0, 9 - (digitCounts.get(digit) ?? 0))
+        let disabled = mode === MODE_NORMAL && missing === 0
         digitButtons.push(
-          <Button key={i} noPadding onClick={() => onDigit(digit)}>
+          <Button
+            key={i}
+            disabled={disabled}
+            noPadding
+            onClick={() => onDigit(digit)}
+          >
             <div
-              className={clsx({
-                "text-[1.15rem]": mode === MODE_NORMAL,
-                "text-[0.6rem]": mode === MODE_CENTRE,
-                [clsx({
-                  "text-[0.55rem] absolute": true,
-                  "top-[0.2rem] left-[0.4rem]": digit === 0 || digit === 1,
-                  "top-[0.2rem]": digit === 2,
-                  "top-[0.2rem] right-[0.4rem]": digit === 3,
-                  "left-[0.4rem]": digit === 4,
-                  "right-[0.4rem]": digit === 6,
-                  "bottom-[0.2rem] left-[0.4rem]": digit === 7,
-                  "bottom-[0.2rem]": digit === 8,
-                  "bottom-[0.2rem] right-[0.4rem]": digit === 9,
-                })]: mode === MODE_CORNER,
-              })}
+              className={clsx(
+                "relative flex flex-1 items-center justify-center",
+                {
+                  "text-[1.15rem]": mode === MODE_NORMAL,
+                  "text-[0.6rem]": mode === MODE_CENTRE,
+                  [clsx({
+                    "text-[0.55rem] absolute": true,
+                    "top-[0.2rem] left-[0.4rem]": digit === 0 || digit === 1,
+                    "top-[0.2rem]": digit === 2,
+                    "top-[0.2rem] right-[0.4rem]": digit === 3,
+                    "left-[0.4rem]": digit === 4,
+                    "right-[0.4rem]": digit === 6,
+                    "bottom-[0.2rem] left-[0.4rem]": digit === 7,
+                    "bottom-[0.2rem]": digit === 8,
+                    "bottom-[0.2rem] right-[0.4rem]": digit === 9,
+                  })]: mode === MODE_CORNER,
+                },
+              )}
             >
               <div>{digit}</div>
+              {missing !== undefined && mode === MODE_NORMAL && (
+                <div
+                  className={clsx(
+                    "absolute bottom-0.5 right-1 text-[0.45rem] leading-none",
+                    disabled ? "text-fg/50" : "text-fg/70",
+                  )}
+                  aria-label={`${missing} missing ${digit}s`}
+                >
+                  {missing}
+                </div>
+              )}
             </div>
           </Button>,
         )
