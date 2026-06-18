@@ -25,10 +25,7 @@ const About = () => {
         </div>
       </a>
       <p className="mb-4 mt-2">
-        Copyright &copy; 2020&ndash;{currentYear}{" "}
-        <a href="https://michelkraemer.com" target="_blank" rel="noreferrer">
-          Michel Krämer
-        </a>
+        Copyright &copy; 2020&ndash;{currentYear} le-firehawk
       </p>
       <p>
         This software is open source and has been released under the{" "}
@@ -39,7 +36,15 @@ const About = () => {
         >
           MIT license
         </a>
-        . The source code is available on{" "}
+        . This is a fork of the original Sudocle project at{" "}
+        <a
+          href="https://github.com/michel-kraemer/sudocle"
+          target="_blank"
+          rel="noreferrer"
+        >
+          michel-kraemer/sudocle
+        </a>
+        . The fork source code is available on{" "}
         <a
           href="https://github.com/michel-kraemer/sudocle"
           target="_blank"

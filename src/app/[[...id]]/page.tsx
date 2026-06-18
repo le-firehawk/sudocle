@@ -884,7 +884,8 @@ const IndexPage = () => {
                   <Pause size="1.3rem" className="mr-1 mb-px" /> Game paused
                 </div>
                 <div className="text-[0.7rem] mb-4">
-                  {formatElapsed(game.timerOnPause)}
+                  {formatElapsed(game.timerOnPause)} · Hints {game.hintsUsed} ·
+                  Mistakes {game.mistakes}
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-[0.6rem] mt-0.5 w-52">
                   <Button onClick={onContinue}>Continue</Button>

@@ -38,15 +38,21 @@ const StatusBar = () => {
         updateGame: state.updateGame,
       })),
     )
-  const { safetyMode, seedDifficulty, setSafetyMode, setSeedDifficulty } =
-    useSettings(
-      useShallow(state => ({
-        safetyMode: state.safetyMode,
-        seedDifficulty: state.seedDifficulty,
-        setSafetyMode: state.setSafetyMode,
-        setSeedDifficulty: state.setSeedDifficulty,
-      })),
-    )
+  const {
+    theme,
+    safetyMode,
+    seedDifficulty,
+    setSafetyMode,
+    setSeedDifficulty,
+  } = useSettings(
+    useShallow(state => ({
+      theme: state.theme,
+      safetyMode: state.safetyMode,
+      seedDifficulty: state.seedDifficulty,
+      setSafetyMode: state.setSafetyMode,
+      setSeedDifficulty: state.setSeedDifficulty,
+    })),
+  )
   const onTabClick = useSidebar(state => state.onTabClick)
   const [pendingDifficulty, setPendingDifficulty] = useState<SeedDifficulty>()
   const [hintCooldownUntil, setHintCooldownUntil] = useState(0)
@@ -94,10 +100,19 @@ const StatusBar = () => {
     <div className="fixed flex items-center w-full bg-grey-700 text-fg text-[0.8rem] font-normal h-(--status-bar-height) md:pt-px justify-between py-0 px-2.5">
       <div className="flex items-center">
         <button
-          className="rounded px-2 py-0.5 text-[0.55rem] hover:bg-button-hover"
+          aria-label="Sudocle home"
+          className="rounded px-2 py-0.5 hover:bg-button-hover"
           onClick={goHome}
         >
-          Sudocle
+          <img
+            className="h-5 w-auto"
+            src={
+              theme === "sudocle-dark" || theme === "dark"
+                ? require("../assets/logo-white.svg")
+                : require("../assets/logo.svg")
+            }
+            alt="Sudocle"
+          />
         </button>
         <button
           className="ml-2 rounded px-2 py-0.5 text-[0.55rem] hover:bg-button-hover"

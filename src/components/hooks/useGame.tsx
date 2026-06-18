@@ -1245,6 +1245,7 @@ export const useGame = create<GameStateWithActions>()(
           return
         }
 
+        let handledHint = false
         if (action.type === TYPE_HINT) {
           if (draft.data.solution === undefined) {
             return
@@ -1273,7 +1274,7 @@ export const useGame = create<GameStateWithActions>()(
             discovered: false,
           })
           draft.hintsUsed++
-          return
+          handledHint = true
         }
 
         if (action.type === TYPE_PAUSE) {
@@ -1286,7 +1287,9 @@ export const useGame = create<GameStateWithActions>()(
           return
         }
 
-        if (
+        if (handledHint) {
+          // already applied above; keep going so undo state is recorded
+        } else if (
           ([TYPE_DIGITS, TYPE_COLOURS] as string[]).includes(action.type) &&
           (action as DigitsAction | ColoursAction).action === ACTION_REMOVE
         ) {
