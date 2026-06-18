@@ -131,7 +131,14 @@ const Sidebar = () => {
         },
       )}
     >
-      <div className="w-8 mt-2 hidden md:block">
+      <div
+        className={clsx(
+          "w-8 hidden md:block",
+          mode !== MODE_NORMAL
+            ? "mt-[calc(var(--status-bar-height)+2.75rem)]"
+            : "mt-[calc(var(--status-bar-height)+0.75rem)]",
+        )}
+      >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 500">
           <defs>
             <filter id="shadow" x="-20%" y="-20%" height="140%" width="140%">

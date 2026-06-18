@@ -386,6 +386,21 @@ function filterGivens(
   return r
 }
 
+function selectionHasDigits(draft: GameState): boolean {
+  for (let cell of draft.selection) {
+    if (draft.digits.has(cell)) {
+      return true
+    }
+  }
+  return false
+}
+
+function modeIsDisabled(draft: GameState, mode: Mode): boolean {
+  return (
+    selectionHasDigits(draft) && (mode === MODE_CORNER || mode === MODE_CENTRE)
+  )
+}
+
 function modeReducer(draft: GameState, action: ModeAction) {
   let newEnabledModes
   if (draft.modeGroup === 0) {
@@ -397,6 +412,9 @@ function modeReducer(draft: GameState, action: ModeAction) {
   switch (action.action) {
     case ACTION_SET:
       if (action.mode !== undefined) {
+        if (modeIsDisabled(draft, action.mode)) {
+          return
+        }
         newEnabledModes = [action.mode]
         draft.modeGroup = getModeGroup(action.mode)
       }
@@ -404,6 +422,9 @@ function modeReducer(draft: GameState, action: ModeAction) {
 
     case ACTION_PUSH:
       if (action.mode !== undefined) {
+        if (modeIsDisabled(draft, action.mode)) {
+          return
+        }
         if (!newEnabledModes.includes(action.mode)) {
           newEnabledModes.push(action.mode)
         }
@@ -433,22 +454,17 @@ function modeReducer(draft: GameState, action: ModeAction) {
   }
 
   if (action.action === ACTION_ROTATE) {
-    switch (newMode) {
-      case MODE_NORMAL:
-        newMode = MODE_CORNER
+    let cycle: Mode[] =
+      draft.modeGroup === 0
+        ? [MODE_NORMAL, MODE_CORNER, MODE_CENTRE, MODE_COLOUR]
+        : [MODE_PEN]
+    let currentIndex = cycle.indexOf(newMode)
+    for (let i = 1; i <= cycle.length; i++) {
+      let candidate = cycle[(currentIndex + i) % cycle.length]
+      if (!modeIsDisabled(draft, candidate)) {
+        newMode = candidate
         break
-      case MODE_CORNER:
-        newMode = MODE_CENTRE
-        break
-      case MODE_CENTRE:
-        newMode = MODE_COLOUR
-        break
-      case MODE_COLOUR:
-        newMode = MODE_NORMAL
-        break
-      case MODE_PEN:
-        newMode = MODE_PEN
-        break
+      }
     }
     newEnabledModes = [newMode]
   }

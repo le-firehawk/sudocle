@@ -16,7 +16,7 @@ const ThemeSwitcher = () => {
     <button
       type="button"
       aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
-      className="ml-3 inline-flex items-center gap-1 rounded-full border border-fg-500/50 bg-bg px-2 py-0.5 text-[0.55rem] hover:bg-button-hover"
+      className="ml-3 inline-flex h-5 items-center gap-1 rounded-full border border-fg-500/50 bg-bg px-2 text-[0.55rem] leading-none hover:bg-button-hover"
       onClick={toggle}
     >
       {dark ? <Sun height="1em" /> : <Moon height="1em" />}

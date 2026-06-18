@@ -56,12 +56,13 @@ const Pad = () => {
       customColours: state.customColours,
     })),
   )
-  const { data, digits, mode, penColour, solved } = useGame(
+  const { data, digits, mode, penColour, selection, solved } = useGame(
     useShallow(state => ({
       data: state.data,
       digits: state.digits,
       mode: state.mode,
       penColour: state.penColour,
+      selection: state.selection,
       solved: state.solved,
     })),
   )
@@ -69,9 +70,7 @@ const Pad = () => {
   const [colours, setColours] = useState<Colour[]>([])
   const [penColours, setPenColours] = useState<Colour[]>([])
   const [checkReady, setCheckReady] = useState(false)
-  const hasEnteredDigits = [...digits.values()].some(
-    digit => !digit.given || digit.discovered,
-  )
+  const hasSelectedDigits = [...selection].some(k => digits.has(k))
 
   useEffect(() => {
     let computedStyle = getComputedStyle(ref.current!)
@@ -312,7 +311,7 @@ const Pad = () => {
       {(modeGroup === 0 && (
         <Button
           active={mode === MODE_CORNER}
-          disabled={hasEnteredDigits}
+          disabled={hasSelectedDigits}
           noPadding
           onClick={() => onMode(MODE_CORNER)}
         >
@@ -325,7 +324,7 @@ const Pad = () => {
       {(modeGroup === 0 && (
         <Button
           active={mode === MODE_CENTRE}
-          disabled={hasEnteredDigits}
+          disabled={hasSelectedDigits}
           noPadding
           onClick={() => onMode(MODE_CENTRE)}
         >
