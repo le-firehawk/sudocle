@@ -1,5 +1,6 @@
 import { useSettings } from "./hooks/useSettings"
 import { Moon, Sun } from "lucide-react"
+import { useEffect } from "react"
 import { useShallow } from "zustand/react/shallow"
 
 const ThemeSwitcher = () => {
@@ -7,6 +8,11 @@ const ThemeSwitcher = () => {
     useShallow(state => ({ theme: state.theme, setTheme: state.setTheme })),
   )
   const dark = theme === "sudocle-dark" || theme === "dark"
+
+  useEffect(() => {
+    ;(window as any)._updateTheme?.(theme)
+  }, [theme])
+
   function toggle() {
     let nextTheme = dark ? "default" : "sudocle-dark"
     ;(window as any)._updateTheme(nextTheme)

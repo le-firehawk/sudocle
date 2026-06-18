@@ -836,7 +836,7 @@ const IndexPage = () => {
     return `${hours > 0 ? `${hours}:` : ""}${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
   }
 
-  function onConfirmSafetyMove() {
+  const onConfirmSafetyMove = useCallback(() => {
     if (pendingDigitAction === undefined) {
       return
     }
@@ -845,7 +845,23 @@ const IndexPage = () => {
       confirmed: true,
     })
     setPendingDigitAction(undefined)
-  }
+  }, [pendingDigitAction, updateGame])
+
+  useEffect(() => {
+    if (pendingDigitAction === undefined) {
+      return
+    }
+
+    function onSafetyKeyDown(e: KeyboardEvent) {
+      if (e.key === "Enter") {
+        e.preventDefault()
+        onConfirmSafetyMove()
+      }
+    }
+
+    window.addEventListener("keydown", onSafetyKeyDown)
+    return () => window.removeEventListener("keydown", onSafetyKeyDown)
+  }, [onConfirmSafetyMove, pendingDigitAction])
 
   if (showHome) {
     return <HomePage />
@@ -883,14 +899,16 @@ const IndexPage = () => {
         >
           {game.data && game.data.cells.length > 0 && fontsLoaded ? (
             <>
-              <div className="fixed left-8 top-1/2 z-10 hidden -translate-y-1/2 flex-col gap-3 bg-transparent p-0 text-base font-bold leading-tight text-fg/90 xl:flex">
-                <div className="text-fg/70">Time</div>
-                <div>{formatElapsed(currentElapsed(summaryNow))}</div>
-                <div className="text-fg/70">Mistakes</div>
-                <div>{game.mistakes}</div>
-                <div className="text-fg/70">Hints</div>
-                <div>{game.hintsUsed}</div>
-              </div>
+              {!game.paused && (
+                <div className="fixed left-8 top-1/2 z-10 hidden -translate-y-1/2 flex-col gap-3 bg-transparent p-0 text-base font-bold leading-tight text-fg/90 xl:flex">
+                  <div className="text-fg/70">Time</div>
+                  <div>{formatElapsed(currentElapsed(summaryNow))}</div>
+                  <div className="text-fg/70">Mistakes</div>
+                  <div>{game.mistakes}</div>
+                  <div className="text-fg/70">Hints</div>
+                  <div>{game.hintsUsed}</div>
+                </div>
+              )}
               <div
                 className="flex flex-col justify-center items-center h-full"
                 ref={gridContainerRef}

@@ -96,18 +96,23 @@ const StatusBar = () => {
     window.location.href = `${process.env.__NEXT_ROUTER_BASEPATH}/${randomSeedPuzzleId()}/`
   }
 
+  let darkTheme = theme === "sudocle-dark" || theme === "dark"
+
   return (
     <div className="fixed flex items-center w-full bg-grey-700 text-fg text-[0.8rem] font-normal h-(--status-bar-height) md:pt-px justify-between py-0 px-2.5">
       <div className="flex items-center">
         <button
           aria-label="Sudocle home"
-          className="rounded px-2 py-0.5 hover:bg-button-hover"
+          className={clsx(
+            "rounded px-2 py-0.5 hover:bg-button-hover",
+            !darkTheme && "bg-white/85 shadow-sm",
+          )}
           onClick={goHome}
         >
           <img
             className="h-5 w-auto"
             src={
-              theme === "sudocle-dark" || theme === "dark"
+              darkTheme
                 ? require("../assets/logo-white.svg")
                 : require("../assets/logo.svg")
             }
