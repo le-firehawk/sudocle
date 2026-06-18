@@ -22,6 +22,7 @@ import {
   ACTION_SET,
   ACTION_UP,
   DigitsAction,
+  TYPE_CHECK,
   TYPE_INIT,
   TYPE_MODE,
   TYPE_MODE_GROUP,
@@ -42,17 +43,14 @@ import { convertFPuzzle } from "../../components/lib/fpuzzlesconverter"
 import lzwDecompress from "../../components/lib/lzwdecompressor"
 import { Data } from "../../components/types/Data"
 import Popup from "../../reuse/Popup"
-import { buildSeedPuzzle, isSeedPuzzleId } from "../../reuse/seedPuzzle"
+import {
+  buildSeedPuzzle,
+  isSeedPuzzleId,
+  randomSeedPuzzleId,
+} from "../../reuse/seedPuzzle"
 import clsx from "clsx"
 import { enableMapSet } from "immer"
-import {
-  Check,
-  CircleEllipsis,
-  Frown,
-  Pause,
-  Sprout,
-  ThumbsUp,
-} from "lucide-react"
+import { Check, CircleEllipsis, Frown, Pause, Sprout } from "lucide-react"
 import {
   MouseEvent,
   ReactNode,
@@ -106,6 +104,8 @@ const IndexPage = () => {
   const [isTest, setIsTest] = useState(false)
   const [fontsLoaded, setFontsLoaded] = useState(false)
   const [pendingDigitAction, setPendingDigitAction] = useState<DigitsAction>()
+  const [completionActionsOpen, setCompletionActionsOpen] = useState(false)
+  const [pausedClock, setPausedClock] = useState(new Date())
   const didCheckForSavedGame = useRef<boolean>(false)
   const [showHome, setShowHome] = useState(false)
 
@@ -691,6 +691,20 @@ const IndexPage = () => {
     }
   }, [game.errors, game.checkCounter])
 
+  useEffect(() => {
+    if (
+      game.data.cells.length === 0 ||
+      game.solved ||
+      game.errors.type !== "unknown"
+    ) {
+      return
+    }
+    let nCells = game.data.cells.reduce((acc, row) => acc + row.length, 0)
+    if (nCells > 0 && game.digits.size === nCells) {
+      updateGame({ type: TYPE_CHECK })
+    }
+  }, [game.data, game.digits, game.errors.type, game.solved, updateGame])
+
   // load saved game after initialize and save game state on pause
   useEffect(() => {
     if (game.data.cells.length === 0) {
@@ -702,6 +716,7 @@ const IndexPage = () => {
       // resume game if there is a saved state
       if (hasSavedGame()) {
         loadSavedGame()
+        updateGame({ type: TYPE_UNPAUSE })
       }
       didCheckForSavedGame.current = true
     } else {
@@ -719,6 +734,7 @@ const IndexPage = () => {
     hasSavedGame,
     loadSavedGame,
     deleteSavedGame,
+    updateGame,
   ])
 
   useEffect(() => {
@@ -730,6 +746,50 @@ const IndexPage = () => {
       delete (window as any).sudocleConfirmDigit
     }
   }, [])
+
+  useEffect(() => {
+    if (!paused) {
+      return
+    }
+    setPausedClock(new Date())
+    let interval = window.setInterval(() => setPausedClock(new Date()), 1000)
+    return () => window.clearInterval(interval)
+  }, [paused])
+
+  function onRestart() {
+    updateGame({ type: TYPE_INIT, puzzleId: game.puzzleId, data: game.data })
+  }
+
+  function goHome() {
+    window.location.href = `${process.env.__NEXT_ROUTER_BASEPATH}/`
+  }
+
+  function goNewPuzzle() {
+    window.location.href = `${process.env.__NEXT_ROUTER_BASEPATH}/${randomSeedPuzzleId()}/`
+  }
+
+  function completionFace() {
+    let elapsed = (game.completedAt ?? +new Date()) - game.startedAt
+    if (game.hintsUsed === 0 && game.mistakes === 0) {
+      return "😁"
+    }
+    if (game.hintsUsed === 0) {
+      return "🙂"
+    }
+    if ((game.hintsUsed > 0 && game.mistakes > 0) || elapsed > 30 * 60 * 1000) {
+      return "😢"
+    }
+    return "😐"
+  }
+
+  function formatElapsed(ms: number) {
+    let seconds = Math.max(0, Math.floor(ms / 1000))
+    let minutes = Math.floor(seconds / 60)
+    let hours = Math.floor(minutes / 60)
+    seconds %= 60
+    minutes %= 60
+    return `${hours > 0 ? `${hours}:` : ""}${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+  }
 
   function onConfirmSafetyMove() {
     if (pendingDigitAction === undefined) {
@@ -803,11 +863,17 @@ const IndexPage = () => {
           {paused && (
             <div className="fixed inset-0 bg-bg/75 flex justify-center items-center backdrop-blur-lg">
               <div className="flex flex-col justify-center items-center mb-8">
-                <div className="font-medium pt-5 flex items-center text-sm mb-4">
+                <div className="font-medium pt-5 flex items-center text-sm mb-1">
                   <Pause size="1.3rem" className="mr-1 mb-px" /> Game paused
                 </div>
-                <div className="w-16 text-[0.6rem] mt-0.5">
+                <div className="text-[0.7rem] mb-4">
+                  {pausedClock.toLocaleTimeString()}
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-[0.6rem] mt-0.5 w-52">
                   <Button onClick={onContinue}>Continue</Button>
+                  <Button onClick={onRestart}>↻ Restart</Button>
+                  <Button onClick={goHome}>Home</Button>
+                  <Button onClick={goNewPuzzle}>New Puzzle</Button>
                 </div>
               </div>
               <div className="absolute bottom-3 text-[0.6rem] text-gray-600 dark:text-gray-400 flex flex-row items-start gap-1 px-4">
@@ -823,13 +889,42 @@ const IndexPage = () => {
 
         <Modal
           isOpen={solvedModalOpen}
-          title="Congratulations!"
+          title="Puzzle complete"
           type="success"
-          icon={<ThumbsUp size="3.25em" />}
-          onOpenChange={open => setSolvedModalOpen(open)}
+          icon={
+            <span className="text-[3.25em] leading-none">
+              {completionFace()}
+            </span>
+          }
+          onOpenChange={open => {
+            setSolvedModalOpen(open)
+            if (!open) {
+              setCompletionActionsOpen(true)
+            }
+          }}
         >
-          You have solved the puzzle
+          <div className="space-y-1">
+            <div>
+              Time:{" "}
+              {formatElapsed(
+                (game.completedAt ?? +new Date()) - game.startedAt,
+              )}
+            </div>
+            <div>Mistakes: {game.mistakes}</div>
+            <div>Hints used: {game.hintsUsed}</div>
+          </div>
         </Modal>
+        <Popup
+          isOpen={completionActionsOpen}
+          title="What next?"
+          type="success"
+          message="Start another puzzle or return home."
+          responseButtons={[
+            { label: "Home", onClick: goHome },
+            { label: "New Puzzle", active: true, onClick: goNewPuzzle },
+          ]}
+          onOpenChange={setCompletionActionsOpen}
+        />
         <Popup
           isOpen={pendingDigitAction !== undefined}
           title="Safety check"

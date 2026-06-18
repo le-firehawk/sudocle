@@ -112,6 +112,10 @@ export interface GameState extends PersistentGameState {
   paused: boolean
   timerOnPause: number
   checkCounter: number
+  hintsUsed: number
+  mistakes: number
+  startedAt: number
+  completedAt?: number
 }
 
 interface GameStateWithActions extends GameState {
@@ -357,6 +361,10 @@ function makeEmptyState(puzzleId?: string, data?: Data): GameState {
     paused: false,
     timerOnPause: 0,
     checkCounter: 0,
+    hintsUsed: 0,
+    mistakes: 0,
+    startedAt: +new Date(),
+    completedAt: undefined,
     fogLights,
     fogRaster: makeFogRaster(data ?? EmptyData, fogLights),
   }
@@ -1225,6 +1233,14 @@ export const useGame = create<GameStateWithActions>()(
             draft.data?.solution,
           )
           draft.solved = draft.errors.type === "solved"
+          if (draft.errors.type === "solved") {
+            draft.completedAt = +new Date()
+          } else if (
+            draft.errors.type === "wrongsolution" ||
+            draft.errors.type === "badsofar"
+          ) {
+            draft.mistakes++
+          }
           draft.checkCounter++
           return
         }
@@ -1256,6 +1272,7 @@ export const useGame = create<GameStateWithActions>()(
             given: false,
             discovered: false,
           })
+          draft.hintsUsed++
           return
         }
 

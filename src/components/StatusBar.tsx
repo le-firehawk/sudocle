@@ -42,6 +42,12 @@ const StatusBar = () => {
     seedDifficulty === "expert" || seedDifficulty === "hellish"
 
   function onDifficultyChange(difficulty: SeedDifficulty) {
+    if (
+      isSeedPuzzleId(puzzleId) &&
+      !window.confirm("Changing difficulty will load a new puzzle. Continue?")
+    ) {
+      return
+    }
     setSeedDifficulty(difficulty)
     if (isSeedPuzzleId(puzzleId)) {
       updateGame({

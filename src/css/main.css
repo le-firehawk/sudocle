@@ -26,8 +26,8 @@
   --color-modal-success: rgb(221 236 208);
   --color-modal-alert: rgb(232 186 186);
   --color-modal-warning: rgb(236 224 191);
-  --color-digit: rgb(75 106 190);
-  --color-digit-small: rgb(58 84 156);
+  --color-digit: rgb(28 60 146);
+  --color-digit-small: rgb(31 57 128);
   --color-button-hover: var(--color-grey-500);
   --color-button-active: var(--color-grey-500);
   --color-selection-yellow: rgb(255 223 41);

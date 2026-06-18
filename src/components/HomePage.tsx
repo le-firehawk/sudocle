@@ -1,6 +1,7 @@
 import { SeedDifficulty, randomSeedPuzzleId } from "../reuse/seedPuzzle"
 import Button from "./Button"
 import { useSettings } from "./hooks/useSettings"
+import clsx from "clsx"
 import { useEffect, useState } from "react"
 
 interface SavedGame {
@@ -25,6 +26,7 @@ function savedGames(): SavedGame[] {
 
 const HomePage = () => {
   const [games, setGames] = useState<SavedGame[]>([])
+  const [manualSeed, setManualSeed] = useState("")
   const { seedDifficulty, setSeedDifficulty } = useSettings()
   useEffect(() => setGames(savedGames()), [])
 
@@ -39,27 +41,44 @@ const HomePage = () => {
         <p className="text-fg/70 mb-6">
           Resume a saved puzzle or start a fresh random seed puzzle.
         </p>
-        <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <label className="text-sm">
-            Difficulty
-            <select
-              className="ml-2 rounded border border-fg-500/50 bg-bg px-2 py-1 text-sm"
-              value={seedDifficulty}
-              onChange={e =>
-                setSeedDifficulty(e.target.value as SeedDifficulty)
-              }
-            >
-              <option value="beginner">Beginner</option>
-              <option value="intermediate">Intermediate</option>
-              <option value="hard">Hard</option>
-              <option value="expert">Expert</option>
-              <option value="hellish">Hellish</option>
-            </select>
-          </label>
-          <div className="w-56">
-            <Button onClick={() => goTo(randomSeedPuzzleId())}>
-              New random puzzle
-            </Button>
+        <div className="mb-8 space-y-3">
+          <div className="flex flex-wrap gap-2 text-[0.6rem]">
+            {(
+              [
+                "beginner",
+                "intermediate",
+                "hard",
+                "expert",
+                "hellish",
+              ] as SeedDifficulty[]
+            ).map(difficulty => (
+              <button
+                key={difficulty}
+                type="button"
+                className={clsx(
+                  "rounded-full border border-fg-500/50 px-3 py-1 capitalize hover:bg-button-hover",
+                  seedDifficulty === difficulty && "bg-button-active",
+                )}
+                onClick={() => setSeedDifficulty(difficulty)}
+              >
+                {difficulty}
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <input
+              className="rounded border border-fg-500/50 bg-bg px-3 py-2 text-sm"
+              placeholder="Enter a seed"
+              value={manualSeed}
+              onChange={e => setManualSeed(e.target.value)}
+            />
+            <div className="w-56">
+              <Button
+                onClick={() => goTo(manualSeed.trim() || randomSeedPuzzleId())}
+              >
+                {manualSeed.trim() ? "Start seed" : "New random puzzle"}
+              </Button>
+            </div>
           </div>
         </div>
         <h2 className="text-lg font-medium mb-3">Saved games</h2>
