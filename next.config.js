@@ -68,15 +68,8 @@ const config = {
 
   webpack: (config, { dev, defaultLoaders: _defaultLoaders }) => {
     config.module.rules.push({
-      test: /\.(gif|png|jpe?g)$/i,
-      type: "asset",
-      use: "image-webpack-loader",
-    })
-
-    config.module.rules.push({
       test: /\.svg$/i,
       type: "asset",
-      use: "image-webpack-loader",
       generator: {
         dataUrl: content => {
           content = content.toString()

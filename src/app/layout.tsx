@@ -1,34 +1,7 @@
 import MatomoInit from "../components/MatomoInit"
 import "../css/colour-palettes.css"
 import "../css/main.css"
-import clsx from "clsx"
 import type { Metadata } from "next"
-import { Baloo_2, Roboto, Roboto_Condensed } from "next/font/google"
-
-const baloo = Baloo_2({
-  weight: ["700"],
-  style: ["normal"],
-  subsets: ["latin"],
-  display: "swap", // force "swap" even in production mode
-  variable: "--raw-font-baloo",
-})
-
-const roboto = Roboto({
-  weight: ["400", "500", "700"],
-  style: ["normal", "italic"],
-  subsets: ["latin"],
-  display: "swap", // force "swap" even in production mode
-  variable: "--raw-font-roboto",
-})
-
-const robotoCondensed = Roboto_Condensed({
-  weight: ["400"],
-  style: ["normal"],
-  subsets: ["latin"],
-  display: "swap", // force "swap" even in production mode
-  variable: "--raw-font-roboto-condensed",
-})
-
 export const metadata: Metadata = {
   title: "Sudocle",
   description: "A modern web app for Sudoku inspired by Cracking the Cryptic",
@@ -42,13 +15,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html
-      lang="en"
-      className={clsx(
-        `${baloo.variable} ${roboto.variable} ${robotoCondensed.variable}`,
-      )}
-      suppressHydrationWarning
-    >
+    <html lang="en" suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
