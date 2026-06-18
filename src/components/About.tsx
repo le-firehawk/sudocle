@@ -13,10 +13,10 @@ const About = () => {
         rel="noreferrer"
       >
         <div className="max-w-(--breakpoint-xs) mt-10 relative pb-2">
-          {theme !== "dark" && (
+          {theme !== "sudocle-dark" && theme !== "dark" && (
             <img src={require("../assets/logo.svg")} alt="Sudocle logo" />
           )}
-          {theme === "dark" && (
+          {(theme === "sudocle-dark" || theme === "dark") && (
             <img src={require("../assets/logo-white.svg")} alt="Sudocle logo" />
           )}
           <div className="font-bold text-base absolute -right-2 bottom-0 leading-none text-fg font-baloo">

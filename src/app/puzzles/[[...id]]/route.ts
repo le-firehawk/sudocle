@@ -4,7 +4,7 @@ import {
   isSeedPuzzleId,
   randomSeedPuzzleId,
 } from "../../../reuse/seedPuzzle"
-import { NextRequest } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 
 const URLS = [
   "https://firebasestorage.googleapis.com/v0/b/sudoku-sandbox.appspot.com/o/{}?alt=media",
@@ -28,7 +28,7 @@ async function puzzleResponseFromFetch(
 }
 
 export async function GET(
-  _: NextRequest,
+  request: NextRequest,
   context: { params: Promise<{ id?: string[] }> },
 ): Promise<Response> {
   let params = await context.params
@@ -36,11 +36,11 @@ export async function GET(
   try {
     if (params.id === undefined || params.id.length === 0) {
       if (process.env.PRELOAD_PUZZLES === "1") {
-        let r = new Response(
-          JSON.stringify(buildSeedPuzzle(randomSeedPuzzleId())),
-        )
-        r.headers.set("cache-control", "no-store")
-        return r
+        let seed = randomSeedPuzzleId()
+        return NextResponse.redirect(new URL(
+            `${process.env.__NEXT_ROUTER_BASEPATH}/puzzles/${seed}/`,
+            request.url,
+          ))
       }
 
       let r = new Response(JSON.stringify(emptyGrid))

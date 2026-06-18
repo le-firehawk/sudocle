@@ -1,3 +1,4 @@
+import ThemeSwitcher from "./ThemeSwitcher"
 import Timer from "./Timer"
 import { useGame } from "./hooks/useGame"
 import { useSidebar } from "./hooks/useSidebar"
@@ -17,7 +18,10 @@ const StatusBar = () => {
 
   return (
     <div className="fixed flex md:justify-center items-center w-full bg-grey-700 text-fg text-[0.8rem] font-normal h-(--status-bar-height) md:pt-px justify-between py-0 px-2.5">
-      <Timer solved={solved} />
+      <div className="flex items-center">
+        <Timer solved={solved} />
+        <ThemeSwitcher />
+      </div>
       <div className="flex md:hidden">
         {title !== undefined && rules !== undefined && (
           <div

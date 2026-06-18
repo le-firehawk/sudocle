@@ -143,15 +143,15 @@ const Settings = () => {
       <RadioGroup
         name="theme"
         ariaLabel="Select theme"
-        value={theme}
+        value={theme === "dark" ? "sudocle-dark" : theme}
         options={[
           {
             id: "default",
             label: "Sudocle",
           },
           {
-            id: "dark",
-            label: "Dark",
+            id: "sudocle-dark",
+            label: "Sudocle Dark",
           },
         ]}
         onChange={onChangeTheme}

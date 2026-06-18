@@ -1,6 +1,7 @@
 "use client"
 
 import Button from "../../components/Button"
+import HomePage from "../../components/HomePage"
 import Modal from "../../components/Modal"
 import Pad from "../../components/Pad"
 import Sidebar from "../../components/Sidebar"
@@ -98,6 +99,7 @@ const IndexPage = () => {
   const [isTest, setIsTest] = useState(false)
   const [fontsLoaded, setFontsLoaded] = useState(false)
   const didCheckForSavedGame = useRef<boolean>(false)
+  const [showHome, setShowHome] = useState(false)
 
   function onMouseDown(e: MouseEvent<HTMLDivElement>) {
     // check if we hit a target that would clear the selection
@@ -251,6 +253,19 @@ const IndexPage = () => {
             u += `${data}/`
           }
           let response = await fetch(u)
+          if (response.redirected) {
+            let redirected = new URL(response.url)
+            let parts = redirected.pathname.split("/puzzles/")
+            if (parts[1]) {
+              let visibleId = decodeURIComponent(parts[1].replace(/\/$/, ""))
+              window.history.replaceState(
+                null,
+                "",
+                `${process.env.__NEXT_ROUTER_BASEPATH}/${encodeURIComponent(visibleId)}/`,
+              )
+              id = visibleId
+            }
+          }
           responseBody = await response.text()
           if (response.status !== 200) {
             throw new Error(responseBody)
@@ -339,6 +354,24 @@ const IndexPage = () => {
       if (testId !== null) {
         id = "test"
       }
+    }
+
+    if (id === "") {
+      fetch(`${process.env.__NEXT_ROUTER_BASEPATH}/puzzles/`).then(response => {
+        if (response.redirected) {
+          let redirected = new URL(response.url)
+          let parts = redirected.pathname.split("/puzzles/")
+          if (parts[1]) {
+            let visibleId = decodeURIComponent(parts[1].replace(/\/$/, ""))
+            window.location.replace(
+              `${process.env.__NEXT_ROUTER_BASEPATH}/${encodeURIComponent(visibleId)}/`,
+            )
+            return
+          }
+        }
+        setShowHome(true)
+      })
+      return
     }
 
     loadFromId(id)
@@ -672,6 +705,10 @@ const IndexPage = () => {
     deleteSavedGame,
   ])
 
+  if (showHome) {
+    return <HomePage />
+  }
+
   return (
     <>
       <div
@@ -687,7 +724,7 @@ const IndexPage = () => {
           </div>
         ) : undefined}
         <div
-          className="w-screen flex justify-center items-center pb-4 md:pb-11 px-2 md:px-12 h-dvh pt-[calc(var(--status-bar-height)+4*var(--spacing))] portrait:flex-col"
+          className="w-screen flex justify-center items-center pb-4 md:pb-11 px-2 md:px-12 h-dvh pt-[calc(var(--status-bar-height)+4*var(--spacing))] portrait:flex-col transition-transform duration-300 md:has-[.sidebar-visible]:-translate-x-[min(18rem,calc((100vw-800px)/2))]"
           ref={gameContainerRef}
         >
           {game.data && game.data.cells.length > 0 && fontsLoaded ? (

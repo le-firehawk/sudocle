@@ -22,8 +22,9 @@ class RegionElement implements GridElement {
   draw(options: { cellSize: number; themeColours: ThemeColours }) {
     this.graphics.poly(this.region.map(v => v * options.cellSize))
     this.graphics.stroke({
-      width: 3,
+      width: 2,
       color: options.themeColours.foregroundColor,
+      alpha: 0.82,
     })
   }
 }

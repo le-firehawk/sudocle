@@ -4,6 +4,7 @@ import Rules from "./Rules"
 import Settings from "./Settings"
 import { useGame } from "./hooks/useGame"
 import { useSidebar } from "./hooks/useSidebar"
+import { TYPE_PAUSE } from "./lib/Actions"
 import {
   ID_ABOUT,
   ID_HELP,
@@ -36,15 +37,24 @@ const Sidebar = () => {
       expanded: state.expanded,
     })),
   )
-  const { title, rules } = useGame(
+  const { title, rules, updateGame, paused, timerOnPause } = useGame(
     useShallow(state => ({
       title: state.data.title,
       rules: state.data.rules,
+      updateGame: state.updateGame,
+      paused: state.paused,
+      timerOnPause: state.timerOnPause,
     })),
   )
 
   const [expanded, setExpanded] = useState(expandedDirect)
   const setExpandedTimer = useRef<number>(undefined)
+
+  useEffect(() => {
+    if (visible && !paused) {
+      updateGame({ type: TYPE_PAUSE, timerOnPause })
+    }
+  }, [visible, paused, timerOnPause, updateGame])
 
   useEffect(() => {
     if (setExpandedTimer.current !== undefined) {
@@ -105,16 +115,16 @@ const Sidebar = () => {
   return (
     <div
       className={clsx(
-        "absolute top-0 right-0 bottom-0 w-[620px] max-w-full flex z-30000",
+        "absolute top-(--status-bar-height) right-0 bottom-0 w-[620px] max-w-full flex z-30000 sidebar-shell",
         visible
-          ? "translate-x-0 duration-300 ease-in-out transition-transform"
+          ? "translate-x-0 duration-300 ease-in-out transition-transform sidebar-visible"
           : "md:translate-x-[calc(100%-2.5rem)] duration-200 ease-in",
         {
           "w-10 z-[-2000] md:z-0": !expanded,
         },
       )}
     >
-      <div className="w-8 mt-8 hidden md:block">
+      <div className="w-8 mt-2 hidden md:block">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 500">
           <defs>
             <filter id="shadow" x="-20%" y="-20%" height="140%" width="140%">
@@ -180,7 +190,7 @@ const Sidebar = () => {
       </div>
       <div
         className={clsx(
-          "absolute top-8 right-8 cursor-pointer hover:text-primary transition-opacity duration-300",
+          "absolute top-4 right-8 cursor-pointer hover:text-primary transition-opacity duration-300",
           visible ? "opacity-100" : "opacity-0",
           { "md:hidden md:opacity-100": !expanded },
         )}

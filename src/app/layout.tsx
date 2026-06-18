@@ -2,6 +2,7 @@ import MatomoInit from "../components/MatomoInit"
 import "../css/colour-palettes.css"
 import "../css/main.css"
 import type { Metadata } from "next"
+
 export const metadata: Metadata = {
   title: "Sudocle",
   description: "A modern web app for Sudoku inspired by Cracking the Cryptic",
@@ -22,7 +23,8 @@ export default function RootLayout({
             __html: `
               if (!('_updateTheme' in window)) {
                 window._updateTheme = function updateTheme(theme) {
-                  if ("SudocleSettings" in localStorage && JSON.parse(localStorage.SudocleSettings).state?.theme === "dark") {
+                  var theme = "SudocleSettings" in localStorage ? JSON.parse(localStorage.SudocleSettings).state?.theme : undefined
+                  if (theme === "sudocle-dark" || theme === "dark") {
                     document.documentElement.classList.add("dark")
                   } else {
                     document.documentElement.classList.remove("dark")

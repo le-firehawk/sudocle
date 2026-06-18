@@ -48,7 +48,7 @@ export const useSettings = create<Settings>()(
 
       setTheme: (theme: string) =>
         set(draft => {
-          draft.theme = theme
+          draft.theme = theme === "dark" ? "sudocle-dark" : theme
         }),
 
       setSelectionColour: (selectionColour: Settings["selectionColour"]) =>
