@@ -1,4 +1,9 @@
-import emptyGrid from "../../../public/empty-grid.json" assert { type: "json" }
+import emptyGrid from "../../../../public/empty-grid.json" assert { type: "json" }
+import {
+  buildSeedPuzzle,
+  isSeedPuzzleId,
+  randomSeedPuzzleId,
+} from "../../../reuse/seedPuzzle"
 import { NextRequest } from "next/server"
 
 const URLS = [
@@ -9,6 +14,19 @@ const URLS = [
 const MAX_AGE_EMPTY_SECONDS = 1209600 // 14 days
 const MAX_AGE_OTHER = 86400 // 1 day
 
+async function puzzleResponseFromFetch(
+  response: Response,
+  cacheControl = `max-age=${MAX_AGE_OTHER}`,
+): Promise<Response | undefined> {
+  if (response.status !== 200) {
+    return undefined
+  }
+
+  let r = new Response(await response.text())
+  r.headers.set("cache-control", cacheControl)
+  return r
+}
+
 export async function GET(
   _: NextRequest,
   context: { params: Promise<{ id?: string[] }> },
@@ -17,6 +35,14 @@ export async function GET(
 
   try {
     if (params.id === undefined || params.id.length === 0) {
+      if (process.env.PRELOAD_PUZZLES === "1") {
+        let r = new Response(
+          JSON.stringify(buildSeedPuzzle(randomSeedPuzzleId())),
+        )
+        r.headers.set("cache-control", "no-store")
+        return r
+      }
+
       let r = new Response(JSON.stringify(emptyGrid))
       r.headers.set("cache-control", `max-age=${MAX_AGE_EMPTY_SECONDS}`)
       return r
@@ -28,11 +54,16 @@ export async function GET(
     let response: Response | undefined
     for (let url of urls) {
       response = await fetch(url)
-      if (response.status === 200) {
-        let r = new Response(await response.text())
-        r.headers.set("cache-control", `max-age=${MAX_AGE_OTHER}`)
+      let r = await puzzleResponseFromFetch(response)
+      if (r !== undefined) {
         return r
       }
+    }
+
+    if (isSeedPuzzleId(id)) {
+      let r = new Response(JSON.stringify(buildSeedPuzzle(id)))
+      r.headers.set("cache-control", `max-age=${MAX_AGE_OTHER}`)
+      return r
     }
 
     if (response === undefined) {

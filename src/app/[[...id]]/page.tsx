@@ -38,7 +38,6 @@ import { convertCTCPuzzle } from "../../components/lib/ctcpuzzleconverter"
 import { convertFPuzzle } from "../../components/lib/fpuzzlesconverter"
 import lzwDecompress from "../../components/lib/lzwdecompressor"
 import { Data } from "../../components/types/Data"
-import FontFaceObserver from "fontfaceobserver"
 import { enableMapSet } from "immer"
 import {
   Check,
@@ -127,18 +126,6 @@ const IndexPage = () => {
       type: TYPE_UNPAUSE,
     })
   }, [updateGame])
-
-  function collectTextToLoad(data: Data): string {
-    let characters = new Set(Array.from("0BESbswy"))
-    let datastr = JSON.stringify(JSON.stringify(data))
-    // only add non-latin characters
-    for (let c of datastr) {
-      if (c > "\u00FF") {
-        characters.add(c)
-      }
-    }
-    return [...characters].join("")
-  }
 
   const loadCompressedPuzzleFromString = useCallback(
     (id: string, str: string) => {
@@ -363,32 +350,7 @@ const IndexPage = () => {
       return
     }
 
-    // make sure all required fonts are loaded
-    let style = getComputedStyle(document.body)
-    let varFontRoboto = style.getPropertyValue("--font-roboto")
-    let families = varFontRoboto
-      .split(",")
-      .map(s => s.trim().replace(/["']/g, ""))
-    let observers: FontFaceObserver[] = []
-    for (let family of families) {
-      let font400 = new FontFaceObserver(family, {
-        weight: 400,
-      })
-      let font700 = new FontFaceObserver(family, {
-        weight: 700,
-      })
-      observers.push(font400, font700)
-    }
-    let textToLoad = collectTextToLoad(game.data)
-    Promise.all(observers.map(o => o.load(textToLoad))).then(
-      () => {
-        setFontsLoaded(true)
-      },
-      () => {
-        console.warn("Roboto font is not available. Using fallback font.")
-        setFontsLoaded(true)
-      },
-    )
+    setFontsLoaded(true)
   }, [game.data])
 
   // register keyboard handlers

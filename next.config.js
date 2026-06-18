@@ -11,7 +11,13 @@ const basePath =
 
 const corsAllowOrigin = process.env.SUDOCLE_CORS_ALLOW_ORIGIN ?? "*"
 
-const eslintDirs = ["app", "components", "cypress/plugins", "cypress/support"]
+const eslintDirs = [
+  "src/app",
+  "src/components",
+  "src/reuse",
+  "cypress/plugins",
+  "cypress/support",
+]
 
 const config = {
   devIndicators: false,
@@ -60,17 +66,10 @@ const config = {
     ]
   },
 
-  webpack: (config, { dev, defaultLoaders }) => {
-    config.module.rules.push({
-      test: /\.(gif|png|jpe?g)$/i,
-      type: "asset",
-      use: "image-webpack-loader",
-    })
-
+  webpack: (config, { dev, defaultLoaders: _defaultLoaders }) => {
     config.module.rules.push({
       test: /\.svg$/i,
       type: "asset",
-      use: "image-webpack-loader",
       generator: {
         dataUrl: content => {
           content = content.toString()

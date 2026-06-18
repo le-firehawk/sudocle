@@ -36,9 +36,9 @@
   --color-selection-blue: rgb(41 123 255);
 
   --font-*: initial;
-  --font-roboto: var(--raw-font-roboto);
-  --font-condensed: var(--raw-font-roboto-condensed), var(--font-roboto);
-  --font-baloo: var(--raw-font-baloo);
+  --font-roboto: Arial, Helvetica, sans-serif;
+  --font-condensed: "Arial Narrow", "Roboto Condensed", var(--font-roboto);
+  --font-baloo: "Trebuchet MS", Arial, Helvetica, sans-serif;
   --default-font-family: var(--font-roboto);
 
   --animate-*: initial;

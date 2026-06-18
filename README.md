@@ -1,7 +1,7 @@
 <h1 align="center">
   <br>
   <br>
-  <img width="500" src="assets/logo.svg" alt="Sudocle">
+  <img width="500" src="src/assets/logo.svg" alt="Sudocle">
   <br>
   <br>
   <br>

@@ -15,8 +15,20 @@ import parseSolution from "./parsesolution"
 import { parseCells } from "./utils"
 import Color from "color"
 import rename from "deep-rename-keys"
-import JSON5 from "json5"
 import { isArray, isString } from "lodash"
+
+function parseObjectLiteral(data: string): any {
+  let json = data
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/(^|[^:])\/\/.*$/gm, "$1")
+    .replace(/([{,]\s*)([A-Za-z_$][\w$-]*)(\s*:)/g, "$1\"$2\"$3")
+    .replace(/'([^'\\]*(?:\\.[^'\\]*)*)'/g, (_, value) =>
+      JSON.stringify(value.replace(/\\'/g, "'")),
+    )
+    .replace(/,\s*([}\]])/g, "$1")
+
+  return JSON.parse(json)
+}
 
 const KEYS: Record<string, string> = {
   c: "color",
@@ -57,7 +69,7 @@ function convertNewPuzzle(data: string): any {
     .replace(/:([a-fA-F0-9]{6})(?=[,}\]])/g, ':"#$1"')
   /* eslint-enable quotes */
 
-  let o = JSON5.parse(data)
+  let o = parseObjectLiteral(data)
   o = rename(o, k => {
     if (KEYS[k] !== undefined) {
       return KEYS[k]

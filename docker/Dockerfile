@@ -24,5 +24,7 @@ WORKDIR /sudocle
 
 EXPOSE 3000
 
+ENV PRELOAD_PUZZLES=0
+
 USER sudocle
 CMD ["node", "server.js"]
