@@ -1,5 +1,6 @@
-import { randomSeedPuzzleId } from "../reuse/seedPuzzle"
+import { SeedDifficulty, randomSeedPuzzleId } from "../reuse/seedPuzzle"
 import Button from "./Button"
+import { useSettings } from "./hooks/useSettings"
 import { useEffect, useState } from "react"
 
 interface SavedGame {
@@ -24,6 +25,7 @@ function savedGames(): SavedGame[] {
 
 const HomePage = () => {
   const [games, setGames] = useState<SavedGame[]>([])
+  const { seedDifficulty, setSeedDifficulty } = useSettings()
   useEffect(() => setGames(savedGames()), [])
 
   function goTo(id: string) {
@@ -37,10 +39,28 @@ const HomePage = () => {
         <p className="text-fg/70 mb-6">
           Resume a saved puzzle or start a fresh random seed puzzle.
         </p>
-        <div className="w-56 mb-8">
-          <Button onClick={() => goTo(randomSeedPuzzleId())}>
-            New random puzzle
-          </Button>
+        <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <label className="text-sm">
+            Difficulty
+            <select
+              className="ml-2 rounded border border-fg-500/50 bg-bg px-2 py-1 text-sm"
+              value={seedDifficulty}
+              onChange={e =>
+                setSeedDifficulty(e.target.value as SeedDifficulty)
+              }
+            >
+              <option value="beginner">Beginner</option>
+              <option value="intermediate">Intermediate</option>
+              <option value="hard">Hard</option>
+              <option value="expert">Expert</option>
+              <option value="hellish">Hellish</option>
+            </select>
+          </label>
+          <div className="w-56">
+            <Button onClick={() => goTo(randomSeedPuzzleId())}>
+              New random puzzle
+            </Button>
+          </div>
         </div>
         <h2 className="text-lg font-medium mb-3">Saved games</h2>
         {games.length === 0 ? (

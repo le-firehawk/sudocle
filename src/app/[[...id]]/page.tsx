@@ -9,6 +9,7 @@ import StatusBar from "../../components/StatusBar"
 import Grid from "../../components/grid/Grid"
 import { GameState, useGame } from "../../components/hooks/useGame"
 import { useSettings } from "../../components/hooks/useSettings"
+import { useSidebar } from "../../components/hooks/useSidebar"
 import {
   ACTION_ALL,
   ACTION_CLEAR,
@@ -42,6 +43,7 @@ import lzwDecompress from "../../components/lib/lzwdecompressor"
 import { Data } from "../../components/types/Data"
 import Popup from "../../reuse/Popup"
 import { buildSeedPuzzle, isSeedPuzzleId } from "../../reuse/seedPuzzle"
+import clsx from "clsx"
 import { enableMapSet } from "immer"
 import {
   Check,
@@ -82,11 +84,13 @@ const IndexPage = () => {
       deleteSavedGame: state.deleteSavedGame,
     })),
   )
-  const { colourPalette } = useSettings(
+  const { colourPalette, seedDifficulty } = useSettings(
     useShallow(state => ({
       colourPalette: state.colourPalette,
+      seedDifficulty: state.seedDifficulty,
     })),
   )
+  const sidebarVisible = useSidebar(state => state.visible)
   const appRef = useRef<HTMLDivElement>(null)
   const gameContainerRef = useRef<HTMLDivElement>(null)
   const gridContainerRef = useRef<HTMLDivElement>(null)
@@ -253,7 +257,7 @@ const IndexPage = () => {
         updateGame({
           type: TYPE_INIT,
           puzzleId: id,
-          data: buildSeedPuzzle(data),
+          data: buildSeedPuzzle(data, seedDifficulty),
         })
       } else {
         let responseBody
@@ -291,7 +295,7 @@ const IndexPage = () => {
         await loadFromId(id, responseBody)
       }
     },
-    [loadCompressedPuzzleFromString, loadFromTest, updateGame],
+    [loadCompressedPuzzleFromString, loadFromTest, seedDifficulty, updateGame],
   )
 
   // load game data
@@ -762,7 +766,11 @@ const IndexPage = () => {
           </div>
         ) : undefined}
         <div
-          className="w-screen flex justify-center items-center pb-4 md:pb-11 px-2 md:px-12 h-dvh pt-[calc(var(--status-bar-height)+4*var(--spacing))] portrait:flex-col transition-transform duration-300 md:has-[.sidebar-visible]:-translate-x-[min(18rem,calc((100vw-800px)/2))]"
+          className={clsx(
+            "w-screen flex justify-center items-center pb-4 md:pb-11 px-2 md:px-12 h-dvh pt-[calc(var(--status-bar-height)+4*var(--spacing))] portrait:flex-col transition-transform duration-300",
+            sidebarVisible &&
+              "md:-translate-x-[min(18rem,calc((100vw-800px)/2))]",
+          )}
           ref={gameContainerRef}
         >
           {game.data && game.data.cells.length > 0 && fontsLoaded ? (
@@ -810,8 +818,8 @@ const IndexPage = () => {
               </div>
             </div>
           )}
-          <Sidebar />
         </div>
+        <Sidebar />
 
         <Modal
           isOpen={solvedModalOpen}

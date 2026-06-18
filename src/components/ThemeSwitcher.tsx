@@ -8,8 +8,9 @@ const ThemeSwitcher = () => {
   )
   const dark = theme === "sudocle-dark" || theme === "dark"
   function toggle() {
-    setTheme(dark ? "default" : "sudocle-dark")
-    window.setTimeout(() => (window as any)._updateTheme(), 0)
+    let nextTheme = dark ? "default" : "sudocle-dark"
+    ;(window as any)._updateTheme(nextTheme)
+    setTheme(nextTheme)
   }
   return (
     <button

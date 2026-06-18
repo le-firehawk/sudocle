@@ -22,6 +22,7 @@ import {
   TYPE_CHECK,
   TYPE_COLOURS,
   TYPE_DIGITS,
+  TYPE_HINT,
   TYPE_INIT,
   TYPE_MODE,
   TYPE_MODE_GROUP,
@@ -1225,6 +1226,36 @@ export const useGame = create<GameStateWithActions>()(
           )
           draft.solved = draft.errors.type === "solved"
           draft.checkCounter++
+          return
+        }
+
+        if (action.type === TYPE_HINT) {
+          if (draft.data.solution === undefined) {
+            return
+          }
+          let candidates: number[] = []
+          for (let y = 0; y < draft.data.solution.length; y++) {
+            for (let x = 0; x < draft.data.solution[y].length; x++) {
+              let k = xytok(x, y)
+              let current = draft.digits.get(k)
+              if (
+                current === undefined ||
+                current.digit !== draft.data.solution[y][x]
+              ) {
+                candidates.push(k)
+              }
+            }
+          }
+          if (candidates.length === 0) {
+            return
+          }
+          let k = candidates[Math.floor(Math.random() * candidates.length)]
+          let [x, y] = ktoxy(k)
+          draft.digits.set(k, {
+            digit: draft.data.solution[y][x]!,
+            given: false,
+            discovered: false,
+          })
           return
         }
 

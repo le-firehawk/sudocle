@@ -18,7 +18,6 @@ const PaletteLabel = ({ children }: { children: React.ReactNode }) => (
 const Settings = () => {
   const {
     colourPalette,
-    theme,
     customColours,
     zoom,
     fontSizeFactorDigits,
@@ -38,7 +37,6 @@ const Settings = () => {
   } = useSettings(
     useShallow(state => ({
       colourPalette: state.colourPalette,
-      theme: state.theme,
       customColours: state.customColours,
       zoom: state.zoom,
       fontSizeFactorDigits: state.fontSizeFactorDigits,
@@ -143,15 +141,11 @@ const Settings = () => {
       <RadioGroup
         name="theme"
         ariaLabel="Select theme"
-        value={theme === "dark" ? "sudocle-dark" : theme}
+        value="default"
         options={[
           {
             id: "default",
             label: "Sudocle",
-          },
-          {
-            id: "sudocle-dark",
-            label: "Sudocle Dark",
           },
         ]}
         onChange={onChangeTheme}

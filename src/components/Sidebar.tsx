@@ -4,7 +4,7 @@ import Rules from "./Rules"
 import Settings from "./Settings"
 import { useGame } from "./hooks/useGame"
 import { useSidebar } from "./hooks/useSidebar"
-import { TYPE_PAUSE } from "./lib/Actions"
+import { TYPE_PAUSE, TYPE_UNPAUSE } from "./lib/Actions"
 import {
   ID_ABOUT,
   ID_HELP,
@@ -49,10 +49,15 @@ const Sidebar = () => {
 
   const [expanded, setExpanded] = useState(expandedDirect)
   const setExpandedTimer = useRef<number>(undefined)
+  const pausedBySidebar = useRef(false)
 
   useEffect(() => {
     if (visible && !paused) {
+      pausedBySidebar.current = true
       updateGame({ type: TYPE_PAUSE, timerOnPause })
+    } else if (!visible && pausedBySidebar.current) {
+      pausedBySidebar.current = false
+      updateGame({ type: TYPE_UNPAUSE })
     }
   }, [visible, paused, timerOnPause, updateGame])
 
@@ -115,7 +120,7 @@ const Sidebar = () => {
   return (
     <div
       className={clsx(
-        "absolute top-(--status-bar-height) right-0 bottom-0 w-[620px] max-w-full flex z-30000 sidebar-shell",
+        "fixed top-(--status-bar-height) right-0 bottom-0 w-[620px] max-w-full flex z-30000 sidebar-shell",
         visible
           ? "translate-x-0 duration-300 ease-in-out transition-transform sidebar-visible"
           : "md:translate-x-[calc(100%-2.5rem)] duration-200 ease-in",

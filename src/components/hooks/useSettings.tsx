@@ -1,3 +1,4 @@
+import { SeedDifficulty } from "../../reuse/seedPuzzle"
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { immer } from "zustand/middleware/immer"
@@ -14,6 +15,7 @@ interface Settings {
   penWidth: number
   penOpacity: number
   safetyMode: boolean
+  seedDifficulty: SeedDifficulty
 
   setColourPalette(colourPalette: string): void
   setTheme(theme: string): void
@@ -26,6 +28,7 @@ interface Settings {
   setPenWidth(penWidth: number): void
   setPenOpacity(penOpacity: number): void
   setSafetyMode(safetyMode: boolean): void
+  setSeedDifficulty(seedDifficulty: SeedDifficulty): void
 }
 
 export const useSettings = create<Settings>()(
@@ -42,6 +45,7 @@ export const useSettings = create<Settings>()(
       penWidth: 2,
       penOpacity: 1,
       safetyMode: false,
+      seedDifficulty: "hard",
 
       setColourPalette: (colourPalette: string) => {
         set(draft => {
@@ -97,6 +101,11 @@ export const useSettings = create<Settings>()(
       setSafetyMode: (safetyMode: boolean) =>
         set(draft => {
           draft.safetyMode = safetyMode
+        }),
+
+      setSeedDifficulty: (seedDifficulty: SeedDifficulty) =>
+        set(draft => {
+          draft.seedDifficulty = seedDifficulty
         }),
     })),
     {

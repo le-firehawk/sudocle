@@ -15,6 +15,7 @@ export const TYPE_INIT = "init"
 export const TYPE_CHECK = "check"
 export const TYPE_PAUSE = "pause"
 export const TYPE_UNPAUSE = "unpause"
+export const TYPE_HINT = "hint"
 
 export const ACTION_ALL = "all"
 export const ACTION_SET = "set"
@@ -110,6 +111,10 @@ export interface UnpauseAction {
   readonly type: typeof TYPE_UNPAUSE
 }
 
+export interface HintAction {
+  readonly type: typeof TYPE_HINT
+}
+
 export type Action =
   | ModeAction
   | ModeGroupAction
@@ -124,3 +129,4 @@ export type Action =
   | CheckAction
   | PauseAction
   | UnpauseAction
+  | HintAction

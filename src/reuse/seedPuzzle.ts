@@ -73,7 +73,25 @@ export function randomSeedPuzzleId(): string {
   return id
 }
 
-export function buildSeedPuzzle(seed: string): Data {
+export type SeedDifficulty =
+  | "beginner"
+  | "intermediate"
+  | "hard"
+  | "expert"
+  | "hellish"
+
+export const SEED_DIFFICULTY_GIVENS: Record<SeedDifficulty, number> = {
+  beginner: 49,
+  intermediate: 41,
+  hard: 24,
+  expert: 16,
+  hellish: 4,
+}
+
+export function buildSeedPuzzle(
+  seed: string,
+  difficulty: SeedDifficulty = "hard",
+): Data {
   let random = mulberry32(xmur3(seed)())
   let rows = shuffle([0, 1, 2], random).flatMap(group =>
     shuffle([0, 1, 2], random).map(row => group * 3 + row),
@@ -86,7 +104,7 @@ export function buildSeedPuzzle(seed: string): Data {
     columns.map(column => digits[pattern(row, column)]),
   )
   let visibleCells = new Set<number>()
-  let targetGivens = 28 + Math.floor(random() * 6)
+  let targetGivens = SEED_DIFFICULTY_GIVENS[difficulty]
   while (visibleCells.size < targetGivens) {
     visibleCells.add(Math.floor(random() * 81))
   }

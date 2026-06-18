@@ -1,8 +1,14 @@
+import {
+  SeedDifficulty,
+  buildSeedPuzzle,
+  isSeedPuzzleId,
+} from "../reuse/seedPuzzle"
 import ThemeSwitcher from "./ThemeSwitcher"
 import Timer from "./Timer"
 import { useGame } from "./hooks/useGame"
 import { useSettings } from "./hooks/useSettings"
 import { useSidebar } from "./hooks/useSidebar"
+import { TYPE_HINT, TYPE_INIT } from "./lib/Actions"
 import { MODE_NORMAL } from "./lib/Modes"
 import { ID_ABOUT, ID_HELP, ID_RULES, ID_SETTINGS } from "./lib/SidebarTabs"
 import clsx from "clsx"
@@ -10,21 +16,41 @@ import { BookOpen, HelpCircle, Info, Sliders } from "lucide-react"
 import { useShallow } from "zustand/react/shallow"
 
 const StatusBar = () => {
-  const { title, rules, solved, mode } = useGame(
-    useShallow(state => ({
-      title: state.data.title,
-      rules: state.data.rules,
-      solved: state.solved,
-      mode: state.mode,
-    })),
-  )
-  const { safetyMode, setSafetyMode } = useSettings(
-    useShallow(state => ({
-      safetyMode: state.safetyMode,
-      setSafetyMode: state.setSafetyMode,
-    })),
-  )
+  const { title, rules, solved, mode, puzzleId, hasSolution, updateGame } =
+    useGame(
+      useShallow(state => ({
+        title: state.data.title,
+        rules: state.data.rules,
+        solved: state.solved,
+        mode: state.mode,
+        puzzleId: state.puzzleId,
+        hasSolution: state.data.solution !== undefined,
+        updateGame: state.updateGame,
+      })),
+    )
+  const { safetyMode, seedDifficulty, setSafetyMode, setSeedDifficulty } =
+    useSettings(
+      useShallow(state => ({
+        safetyMode: state.safetyMode,
+        seedDifficulty: state.seedDifficulty,
+        setSafetyMode: state.setSafetyMode,
+        setSeedDifficulty: state.setSeedDifficulty,
+      })),
+    )
   const onTabClick = useSidebar(state => state.onTabClick)
+  const hintsDisabled =
+    seedDifficulty === "expert" || seedDifficulty === "hellish"
+
+  function onDifficultyChange(difficulty: SeedDifficulty) {
+    setSeedDifficulty(difficulty)
+    if (isSeedPuzzleId(puzzleId)) {
+      updateGame({
+        type: TYPE_INIT,
+        puzzleId,
+        data: buildSeedPuzzle(puzzleId, difficulty),
+      })
+    }
+  }
 
   return (
     <div className="fixed flex md:justify-center items-center w-full bg-grey-700 text-fg text-[0.8rem] font-normal h-(--status-bar-height) md:pt-px justify-between py-0 px-2.5">
@@ -41,6 +67,26 @@ const StatusBar = () => {
         >
           Safety
         </button>
+        <button
+          type="button"
+          disabled={hintsDisabled || !hasSolution}
+          className="ml-3 rounded-full border border-fg-500/50 bg-bg px-2 py-0.5 text-[0.55rem] hover:bg-button-hover disabled:cursor-not-allowed disabled:opacity-50"
+          onClick={() => updateGame({ type: TYPE_HINT })}
+        >
+          Hint
+        </button>
+        <select
+          aria-label="Select difficulty"
+          className="ml-3 rounded-full border border-fg-500/50 bg-bg px-2 py-0.5 text-[0.55rem]"
+          value={seedDifficulty}
+          onChange={e => onDifficultyChange(e.target.value as SeedDifficulty)}
+        >
+          <option value="beginner">Beginner</option>
+          <option value="intermediate">Intermediate</option>
+          <option value="hard">Hard</option>
+          <option value="expert">Expert</option>
+          <option value="hellish">Hellish</option>
+        </select>
         <ThemeSwitcher />
       </div>
       <div className="flex md:hidden">
