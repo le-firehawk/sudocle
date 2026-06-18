@@ -38,16 +38,18 @@ const Sidebar = () => {
       expanded: state.expanded,
     })),
   )
-  const { title, rules, mode, updateGame, paused, timerOnPause } = useGame(
-    useShallow(state => ({
-      title: state.data.title,
-      rules: state.data.rules,
-      mode: state.mode,
-      updateGame: state.updateGame,
-      paused: state.paused,
-      timerOnPause: state.timerOnPause,
-    })),
-  )
+  const { title, rules, mode, updateGame, paused, startedAt, completedAt } =
+    useGame(
+      useShallow(state => ({
+        title: state.data.title,
+        rules: state.data.rules,
+        mode: state.mode,
+        updateGame: state.updateGame,
+        paused: state.paused,
+        startedAt: state.startedAt,
+        completedAt: state.completedAt,
+      })),
+    )
 
   const [expanded, setExpanded] = useState(expandedDirect)
   const setExpandedTimer = useRef<number>(undefined)
@@ -56,12 +58,15 @@ const Sidebar = () => {
   useEffect(() => {
     if (visible && !paused) {
       pausedBySidebar.current = true
-      updateGame({ type: TYPE_PAUSE, timerOnPause })
+      updateGame({
+        type: TYPE_PAUSE,
+        timerOnPause: Math.max(0, (completedAt ?? +new Date()) - startedAt),
+      })
     } else if (!visible && pausedBySidebar.current) {
       pausedBySidebar.current = false
       updateGame({ type: TYPE_UNPAUSE })
     }
-  }, [visible, paused, timerOnPause, updateGame])
+  }, [visible, paused, startedAt, completedAt, updateGame])
 
   useEffect(() => {
     if (setExpandedTimer.current !== undefined) {
