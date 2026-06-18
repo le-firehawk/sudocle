@@ -47,6 +47,7 @@ const HomePage = () => {
   const [games, setGames] = useState<SavedGame[]>([])
   const [manualSeed, setManualSeed] = useState("")
   const [aboutOpen, setAboutOpen] = useState(false)
+  const [clearSavedGamesOpen, setClearSavedGamesOpen] = useState(false)
   const { theme, seedDifficulty, setSeedDifficulty } = useSettings()
   useEffect(() => setGames(savedGames()), [])
 
@@ -61,7 +62,16 @@ const HomePage = () => {
   }
 
   function goTo(id: string) {
-    window.location.href = `${process.env.__NEXT_ROUTER_BASEPATH}/${encodeURIComponent(id)}/`
+    window.location.href = `${process.env.__NEXT_ROUTER_BASEPATH}/${encodeURIComponent(id)}/?difficulty=${seedDifficulty}`
+  }
+
+  function clearSavedGames() {
+    for (let key of Object.keys(window.localStorage)) {
+      if (key.startsWith("SudocleSavedGame_")) {
+        window.localStorage.removeItem(key)
+      }
+    }
+    setGames([])
   }
 
   return (
@@ -130,7 +140,18 @@ const HomePage = () => {
             </div>
           </div>
         </div>
-        <h2 className="text-lg font-medium mb-3">Saved games</h2>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="text-lg font-medium">Saved Games</h2>
+          {games.length > 0 && (
+            <button
+              type="button"
+              className="rounded-full border border-fg-500/50 px-3 py-1 text-[0.6rem] hover:bg-button-hover"
+              onClick={() => setClearSavedGamesOpen(true)}
+            >
+              Clear saved games
+            </button>
+          )}
+        </div>
         {games.length === 0 ? (
           <p className="text-fg/60">No saved games yet.</p>
         ) : (
@@ -154,6 +175,17 @@ const HomePage = () => {
           </div>
         )}
       </main>
+      <Popup
+        isOpen={clearSavedGamesOpen}
+        title="Clear saved games?"
+        type="warning"
+        message="This will remove all saved games from this browser."
+        responseButtons={[
+          { label: "Cancel" },
+          { label: "Clear", active: true, onClick: clearSavedGames },
+        ]}
+        onOpenChange={setClearSavedGamesOpen}
+      />
       <Popup
         isOpen={aboutOpen}
         title="About Sudocle"

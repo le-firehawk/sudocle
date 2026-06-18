@@ -1008,11 +1008,30 @@ export const useGame = create<GameStateWithActions>()(
       // is smaller than 2MB (just to be on the safe side)
       let key = `SudocleSavedGame_${state.puzzleId}`
       let maxUndoStates = 100
-      let limitedState = limitUndoStates(state, maxUndoStates)
+      let limitedState = limitUndoStates(
+        {
+          ...state,
+          timerOnPause: state.paused
+            ? state.timerOnPause
+            : Math.max(0, (state.completedAt ?? +new Date()) - state.startedAt),
+        },
+        maxUndoStates,
+      )
       let str = gameStateToString(limitedState)
       while (maxUndoStates > 0 && key.length + str.length > 1024 * 1024 * 2) {
         maxUndoStates -= 1
-        limitedState = limitUndoStates(state, maxUndoStates)
+        limitedState = limitUndoStates(
+          {
+            ...state,
+            timerOnPause: state.paused
+              ? state.timerOnPause
+              : Math.max(
+                  0,
+                  (state.completedAt ?? +new Date()) - state.startedAt,
+                ),
+          },
+          maxUndoStates,
+        )
         str = gameStateToString(limitedState)
       }
 
@@ -1048,7 +1067,12 @@ export const useGame = create<GameStateWithActions>()(
         }
 
         let loadedState = stringToGameState(str)
-        Object.assign(draft, loadedState.state)
+        let elapsed = loadedState.state?.timerOnPause ?? 0
+        Object.assign(draft, {
+          ...loadedState.state,
+          paused: false,
+          startedAt: +new Date() - elapsed,
+        })
       }),
 
     deleteSavedGame: () => {
@@ -1286,6 +1310,7 @@ export const useGame = create<GameStateWithActions>()(
         }
         if (action.type === TYPE_UNPAUSE) {
           draft.paused = false
+          draft.startedAt = +new Date() - draft.timerOnPause
           return
         }
 
@@ -1346,13 +1371,19 @@ export const useGame = create<GameStateWithActions>()(
           for (let sc of draft.selection) {
             let [x, y] = ktoxy(sc)
             if (draft.data.solution[y][x] !== possibleDigitAction.digit) {
+              if (state.digits.get(sc)?.digit !== possibleDigitAction.digit) {
+                draft.mistakes++
+              }
               draft.incorrectInputs.add(sc)
             } else {
               draft.incorrectInputs.delete(sc)
             }
           }
         }
-        if ((action as any).type === TYPE_DIGITS && possibleDigitAction.action === ACTION_REMOVE) {
+        if (
+          (action as any).type === TYPE_DIGITS &&
+          possibleDigitAction.action === ACTION_REMOVE
+        ) {
           for (let sc of draft.selection) {
             draft.incorrectInputs.delete(sc)
           }

@@ -44,6 +44,7 @@ import lzwDecompress from "../../components/lib/lzwdecompressor"
 import { Data } from "../../components/types/Data"
 import Popup from "../../reuse/Popup"
 import {
+  SeedDifficulty,
   buildSeedPuzzle,
   isSeedPuzzleId,
   randomSeedPuzzleId,
@@ -62,6 +63,24 @@ import {
 import { useShallow } from "zustand/react/shallow"
 
 enableMapSet()
+
+const seedDifficulties: SeedDifficulty[] = [
+  "beginner",
+  "intermediate",
+  "hard",
+  "expert",
+  "hellish",
+]
+
+function difficultyFromUrl(): SeedDifficulty | undefined {
+  if (typeof window === "undefined") {
+    return undefined
+  }
+  let difficulty = new URLSearchParams(window.location.search).get("difficulty")
+  return seedDifficulties.includes(difficulty as SeedDifficulty)
+    ? (difficulty as SeedDifficulty)
+    : undefined
+}
 
 const IndexPage = () => {
   const game: GameState = useGame()
@@ -266,7 +285,7 @@ const IndexPage = () => {
         updateGame({
           type: TYPE_INIT,
           puzzleId: id,
-          data: buildSeedPuzzle(data, seedDifficulty),
+          data: buildSeedPuzzle(data, difficultyFromUrl() ?? seedDifficulty),
         })
       } else {
         let responseBody
@@ -788,8 +807,14 @@ const IndexPage = () => {
     window.location.href = `${process.env.__NEXT_ROUTER_BASEPATH}/${randomSeedPuzzleId()}/`
   }
 
+  function currentElapsed(now = +new Date()) {
+    return game.paused
+      ? game.timerOnPause
+      : Math.max(0, (game.completedAt ?? now) - game.startedAt)
+  }
+
   function completionFace() {
-    let elapsed = (game.completedAt ?? +new Date()) - game.startedAt
+    let elapsed = currentElapsed()
     if (game.hintsUsed === 0 && game.mistakes === 0) {
       return "😁"
     }
@@ -858,16 +883,12 @@ const IndexPage = () => {
         >
           {game.data && game.data.cells.length > 0 && fontsLoaded ? (
             <>
-              <div className="mr-5 hidden min-w-28 flex-col gap-2 rounded-lg bg-grey-700/70 p-3 text-[0.6rem] xl:flex">
-                <div className="font-medium">Time</div>
-                <div>
-                  {formatElapsed(
-                    (game.completedAt ?? summaryNow) - game.startedAt,
-                  )}
-                </div>
-                <div className="font-medium">Mistakes</div>
+              <div className="fixed left-8 top-1/2 z-10 hidden -translate-y-1/2 flex-col gap-3 bg-transparent p-0 text-base font-bold leading-tight text-fg/90 xl:flex">
+                <div className="text-fg/70">Time</div>
+                <div>{formatElapsed(currentElapsed(summaryNow))}</div>
+                <div className="text-fg/70">Mistakes</div>
                 <div>{game.mistakes}</div>
-                <div className="font-medium">Hints</div>
+                <div className="text-fg/70">Hints</div>
                 <div>{game.hintsUsed}</div>
               </div>
               <div
@@ -940,12 +961,7 @@ const IndexPage = () => {
           }}
         >
           <div className="space-y-1">
-            <div>
-              Time:{" "}
-              {formatElapsed(
-                (game.completedAt ?? +new Date()) - game.startedAt,
-              )}
-            </div>
+            <div>Time: {formatElapsed(currentElapsed())}</div>
             <div>Mistakes: {game.mistakes}</div>
             <div>Hints used: {game.hintsUsed}</div>
           </div>
