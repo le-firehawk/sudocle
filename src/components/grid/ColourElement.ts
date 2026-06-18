@@ -9,8 +9,9 @@ class ColourElement implements GridElement {
   readonly k: number
   readonly graphics: Graphics
   private readonly fixedColour: number | undefined
+  private readonly fixedAlpha: number | undefined
 
-  constructor(x: number, y: number, fixedColour?: number) {
+  constructor(x: number, y: number, fixedColour?: number, fixedAlpha?: number) {
     this.x = x
     this.y = y
     this.k = xytok(x, y)
@@ -18,6 +19,7 @@ class ColourElement implements GridElement {
     this.graphics = new Graphics()
     this.graphics.visible = false
     this.fixedColour = fixedColour
+    this.fixedAlpha = fixedAlpha
   }
 
   clear() {
@@ -66,7 +68,9 @@ class ColourElement implements GridElement {
     this.graphics.rect(0.5, 0.5, options.cellSize - 1, options.cellSize - 1)
     this.graphics.fill(palCol)
 
-    if (palCol === 0xffffff) {
+    if (this.fixedAlpha !== undefined) {
+      this.graphics.alpha = this.fixedAlpha
+    } else if (palCol === 0xffffff) {
       this.graphics.alpha = 0.82
     } else {
       this.graphics.alpha = 0.5

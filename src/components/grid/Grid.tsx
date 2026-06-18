@@ -223,6 +223,7 @@ const Grid = ({
   const centreMarkElements = useRef<CentreMarksElement[]>([])
   const cornerMarkElements = useRef<CornerMarksElement[]>([])
   const colourElements = useRef<ColourElement[]>([])
+  const givenBackgroundElements = useRef<ColourElement[]>([])
   const selectionElements = useRef<ColourElement[]>([])
   const errorElements = useRef<ColourElement[]>([])
   const penLineElements = useRef<PenLineElement[]>([])
@@ -902,6 +903,19 @@ const Grid = ({
     })
     all.addChild(centreMarksContainer)
 
+    // create shaded rectangles for pre-filled givens
+    let givenBackgroundContainer = new Container()
+    givenBackgroundContainer.zIndex = -1
+    game.data.cells.forEach((row, y) => {
+      row.forEach((col, x) => {
+        let ge = new ColourElement(x, y, 0x9aa6b2, 0.28)
+        ge.visible = col.value !== undefined
+        givenBackgroundContainer.addChild(ge.graphics)
+        givenBackgroundElements.current.push(ge)
+      })
+    })
+    all.addChild(givenBackgroundContainer)
+
     // create invisible rectangles for colours
     let colourContainer = new Container()
     colourContainer.zIndex = 0
@@ -1017,6 +1031,7 @@ const Grid = ({
       centreMarkElements.current = []
       cornerMarkElements.current = []
       colourElements.current = []
+      givenBackgroundElements.current = []
       selectionElements.current = []
       errorElements.current = []
       penLineElements.current = []
@@ -1414,11 +1429,22 @@ const Grid = ({
   ])
 
   useEffect(() => {
+    let selectedDigits = new Set<number | string>()
+    game.selection.forEach(k => {
+      let digit = game.digits.get(k)?.digit
+      if (digit !== undefined) {
+        selectedDigits.add(digit)
+      }
+    })
+
     selectionElements.current.forEach(s => {
-      s.visible = game.selection.has(s.k)
+      let digit = game.digits.get(s.k)?.digit
+      s.visible =
+        game.selection.has(s.k) ||
+        (digit !== undefined && selectedDigits.has(digit))
     })
     renderNow()
-  }, [game.selection, renderNow])
+  }, [game.digits, game.selection, renderNow])
 
   useEffect(() => {
     if (app === undefined) {

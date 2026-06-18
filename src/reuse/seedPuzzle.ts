@@ -84,8 +84,106 @@ export const SEED_DIFFICULTY_GIVENS: Record<SeedDifficulty, number> = {
   beginner: 49,
   intermediate: 41,
   hard: 24,
-  expert: 16,
-  hellish: 4,
+  expert: 17,
+  hellish: 17,
+}
+
+function countSolutions(grid: (number | undefined)[][], limit = 2): number {
+  let rowUsed = Array.from({ length: 9 }, () => new Set<number>())
+  let columnUsed = Array.from({ length: 9 }, () => new Set<number>())
+  let boxUsed = Array.from({ length: 9 }, () => new Set<number>())
+
+  for (let y = 0; y < 9; y++) {
+    for (let x = 0; x < 9; x++) {
+      let value = grid[y][x]
+      if (value === undefined) {
+        continue
+      }
+      let box = Math.floor(y / 3) * 3 + Math.floor(x / 3)
+      if (
+        rowUsed[y].has(value) ||
+        columnUsed[x].has(value) ||
+        boxUsed[box].has(value)
+      ) {
+        return 0
+      }
+      rowUsed[y].add(value)
+      columnUsed[x].add(value)
+      boxUsed[box].add(value)
+    }
+  }
+
+  function solve(): number {
+    let bestX = -1
+    let bestY = -1
+    let bestCandidates: number[] | undefined
+
+    for (let y = 0; y < 9; y++) {
+      for (let x = 0; x < 9; x++) {
+        if (grid[y][x] !== undefined) {
+          continue
+        }
+        let box = Math.floor(y / 3) * 3 + Math.floor(x / 3)
+        let candidates = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter(
+          value =>
+            !rowUsed[y].has(value) &&
+            !columnUsed[x].has(value) &&
+            !boxUsed[box].has(value),
+        )
+        if (candidates.length === 0) {
+          return 0
+        }
+        if (
+          bestCandidates === undefined ||
+          candidates.length < bestCandidates.length
+        ) {
+          bestX = x
+          bestY = y
+          bestCandidates = candidates
+          if (candidates.length === 1) {
+            break
+          }
+        }
+      }
+      if (bestCandidates?.length === 1) {
+        break
+      }
+    }
+
+    if (bestCandidates === undefined) {
+      return 1
+    }
+
+    let count = 0
+    let box = Math.floor(bestY / 3) * 3 + Math.floor(bestX / 3)
+    for (let value of bestCandidates) {
+      grid[bestY][bestX] = value
+      rowUsed[bestY].add(value)
+      columnUsed[bestX].add(value)
+      boxUsed[box].add(value)
+
+      count += solve()
+
+      grid[bestY][bestX] = undefined
+      rowUsed[bestY].delete(value)
+      columnUsed[bestX].delete(value)
+      boxUsed[box].delete(value)
+
+      if (count >= limit) {
+        return count
+      }
+    }
+    return count
+  }
+
+  return solve()
+}
+
+function hasUniqueSolution(cells: Set<number>, solution: number[][]): boolean {
+  let grid = solution.map((row, y) =>
+    row.map((value, x) => (cells.has(y * 9 + x) ? value : undefined)),
+  )
+  return countSolutions(grid) === 1
 }
 
 export function buildSeedPuzzle(
@@ -103,10 +201,16 @@ export function buildSeedPuzzle(
   let solution = rows.map(row =>
     columns.map(column => digits[pattern(row, column)]),
   )
-  let visibleCells = new Set<number>()
+  let visibleCells = new Set(Array.from({ length: 81 }, (_, index) => index))
   let targetGivens = SEED_DIFFICULTY_GIVENS[difficulty]
-  while (visibleCells.size < targetGivens) {
-    visibleCells.add(Math.floor(random() * 81))
+  for (let cell of shuffle(Array.from(visibleCells), random)) {
+    if (visibleCells.size <= targetGivens) {
+      break
+    }
+    visibleCells.delete(cell)
+    if (!hasUniqueSolution(visibleCells, solution)) {
+      visibleCells.add(cell)
+    }
   }
   let cells: DataCell[][] = solution.map((row, y) =>
     row.map((value, x) => (visibleCells.has(y * 9 + x) ? { value } : {})),

@@ -539,14 +539,7 @@ function digitsReducer(
         for (let sc of selection) {
           let oldDigit = digits.get(sc)
           if (oldDigit !== undefined && oldDigit.given) {
-            if (oldDigit.digit === action.digit) {
-              digits.set(sc, {
-                digit: action.digit,
-                given: true,
-                discovered: true,
-              })
-              changed = true
-            }
+            continue
           } else {
             digits.set(sc, {
               digit: action.digit,
@@ -1386,6 +1379,9 @@ export const useGame = create<GameStateWithActions>()(
         ) {
           for (let sc of draft.selection) {
             let [x, y] = ktoxy(sc)
+            if (state.digits.get(sc)?.given) {
+              continue
+            }
             if (draft.data.solution[y][x] !== possibleDigitAction.digit) {
               if (state.digits.get(sc)?.digit !== possibleDigitAction.digit) {
                 draft.mistakes++

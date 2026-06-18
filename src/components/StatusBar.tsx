@@ -136,6 +136,7 @@ const StatusBar = () => {
             mode === MODE_NORMAL && safetyMode && "bg-button-active",
           )}
           onClick={() => setSafetyMode(!safetyMode)}
+          title="Preview whether a digit matches the solution before committing it."
         >
           Safety
         </button>
@@ -144,6 +145,11 @@ const StatusBar = () => {
           disabled={hintsDisabled || !hasSolution || now < hintCooldownUntil}
           className="ml-3 h-5 min-w-14 rounded-full border border-fg-500/50 bg-bg px-2 text-[0.55rem] leading-none hover:bg-button-hover disabled:cursor-not-allowed disabled:opacity-50"
           onClick={onHint}
+          title={
+            hintsDisabled
+              ? "Hints are disabled for expert and hellish puzzles."
+              : "Fill one unsolved cell with the correct digit."
+          }
         >
           {now < hintCooldownUntil
             ? `Hint ${Math.ceil((hintCooldownUntil - now) / 1000)}`
@@ -151,6 +157,7 @@ const StatusBar = () => {
         </button>
         <select
           aria-label="Select difficulty"
+          title="Choose how many clue digits appear in a new generated puzzle."
           className="ml-3 h-5 min-w-32 rounded-full border border-fg-500/50 bg-bg px-2 text-[0.55rem] leading-none hover:bg-button-hover"
           value={seedDifficulty}
           onChange={e => onDifficultyChange(e.target.value as SeedDifficulty)}

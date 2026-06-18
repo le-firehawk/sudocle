@@ -22,6 +22,7 @@ const ThemeSwitcher = () => {
     <button
       type="button"
       aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
+      title={dark ? "Switch to light mode" : "Switch to dark mode"}
       className="ml-3 inline-flex h-5 items-center gap-1 rounded-full border border-fg-500/50 bg-bg px-2 text-[0.55rem] leading-none hover:bg-button-hover"
       onClick={toggle}
     >
