@@ -92,6 +92,15 @@ function getThemeColour(style: CSSStyleDeclaration, color: string): number {
   return getRGBColor(style.getPropertyValue(color))
 }
 
+function isLightColour(colour: number): boolean {
+  let red = (colour >> 16) & 0xff
+  let green = (colour >> 8) & 0xff
+  let blue = colour & 0xff
+  return (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255 > 0.68
+}
+
+const DARK_TEXT_ON_LIGHT_HIGHLIGHT = 0x20242c
+
 function getThemeColours(elem: Element): ThemeColours {
   let rootStyle = window.getComputedStyle(elem)
   let backgroundColor = getThemeColour(rootStyle, "--color-bg")
@@ -1037,6 +1046,11 @@ const Grid = ({
     }
 
     let themeColours = getThemeColours(ref.current!)
+    let paletteColours = getColourPaletteColours(
+      ref.current!,
+      colourPalette,
+      customColours,
+    ).colours
     let cornerMarks = new Map<number, CornerMarksElement>()
     let centreMarks = new Map<number, CentreMarksElement>()
 
@@ -1077,9 +1091,19 @@ const Grid = ({
           e.visible = false
         } else {
           e.value = digit.digit
-          e.fill = digit.given
+          let fill = digit.given
             ? themeColours.foregroundColor
             : themeColours.digitColor
+          let cellColour = game.colours.get(e.k)
+          let highlightColour = game.selection.has(e.k)
+            ? themeColours.selection.yellow
+            : cellColour === undefined
+              ? undefined
+              : paletteColours[cellColour.colour - 1]
+          e.fill =
+            highlightColour !== undefined && isLightColour(highlightColour)
+              ? DARK_TEXT_ON_LIGHT_HIGHLIGHT
+              : fill
           e.visible = true
 
           let com = cornerMarks.get(e.k)
@@ -1127,6 +1151,8 @@ const Grid = ({
     game.incorrectInputs,
     game.fogRaster,
     game.penLines,
+    game.selection,
+    theme,
   ])
 
   useEffect(() => {

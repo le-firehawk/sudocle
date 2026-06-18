@@ -67,7 +67,7 @@ class ColourElement implements GridElement {
     this.graphics.fill(palCol)
 
     if (palCol === 0xffffff) {
-      this.graphics.alpha = 1.0
+      this.graphics.alpha = 0.82
     } else {
       this.graphics.alpha = 0.5
     }

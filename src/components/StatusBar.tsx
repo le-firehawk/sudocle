@@ -127,7 +127,7 @@ const StatusBar = () => {
           type="button"
           disabled={mode !== MODE_NORMAL}
           className={clsx(
-            "ml-3 rounded-full border border-fg-500/50 bg-bg px-2 py-0.5 text-[0.55rem] hover:bg-button-hover disabled:cursor-not-allowed disabled:opacity-50",
+            "ml-3 h-8 rounded-full border border-fg-500/50 bg-bg px-3 text-[0.55rem] leading-none hover:bg-button-hover disabled:cursor-not-allowed disabled:opacity-50",
             mode === MODE_NORMAL && safetyMode && "bg-button-active",
           )}
           onClick={() => setSafetyMode(!safetyMode)}
@@ -137,7 +137,7 @@ const StatusBar = () => {
         <button
           type="button"
           disabled={hintsDisabled || !hasSolution || now < hintCooldownUntil}
-          className="ml-3 rounded-full border border-fg-500/50 bg-bg px-2 py-0.5 text-[0.55rem] hover:bg-button-hover disabled:cursor-not-allowed disabled:opacity-50"
+          className="ml-3 h-8 min-w-16 rounded-full border border-fg-500/50 bg-bg px-3 text-[0.55rem] leading-none hover:bg-button-hover disabled:cursor-not-allowed disabled:opacity-50"
           onClick={onHint}
         >
           {now < hintCooldownUntil
@@ -146,7 +146,7 @@ const StatusBar = () => {
         </button>
         <select
           aria-label="Select difficulty"
-          className="ml-3 rounded-full border border-fg-500/50 bg-bg px-2 py-0.5 text-[0.55rem]"
+          className="ml-3 h-8 min-w-36 rounded-full border border-fg-500/50 bg-bg px-3 text-[0.55rem] leading-none hover:bg-button-hover"
           value={seedDifficulty}
           onChange={e => onDifficultyChange(e.target.value as SeedDifficulty)}
         >
