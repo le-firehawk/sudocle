@@ -62,7 +62,7 @@ const HomePage = () => {
   }
 
   function goTo(id: string) {
-    window.location.href = `${process.env.__NEXT_ROUTER_BASEPATH}/${encodeURIComponent(id)}/?difficulty=${seedDifficulty}`
+    window.location.href = `${process.env.__NEXT_ROUTER_BASEPATH}/${encodeURIComponent(id)}/`
   }
 
   function clearSavedGames() {

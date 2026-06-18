@@ -44,7 +44,6 @@ import lzwDecompress from "../../components/lib/lzwdecompressor"
 import { Data } from "../../components/types/Data"
 import Popup from "../../reuse/Popup"
 import {
-  SeedDifficulty,
   buildSeedPuzzle,
   isSeedPuzzleId,
   randomSeedPuzzleId,
@@ -63,24 +62,6 @@ import {
 import { useShallow } from "zustand/react/shallow"
 
 enableMapSet()
-
-const seedDifficulties: SeedDifficulty[] = [
-  "beginner",
-  "intermediate",
-  "hard",
-  "expert",
-  "hellish",
-]
-
-function difficultyFromUrl(): SeedDifficulty | undefined {
-  if (typeof window === "undefined") {
-    return undefined
-  }
-  let difficulty = new URLSearchParams(window.location.search).get("difficulty")
-  return seedDifficulties.includes(difficulty as SeedDifficulty)
-    ? (difficulty as SeedDifficulty)
-    : undefined
-}
 
 const IndexPage = () => {
   const game: GameState = useGame()
@@ -285,7 +266,7 @@ const IndexPage = () => {
         updateGame({
           type: TYPE_INIT,
           puzzleId: id,
-          data: buildSeedPuzzle(data, difficultyFromUrl() ?? seedDifficulty),
+          data: buildSeedPuzzle(data, seedDifficulty),
         })
       } else {
         let responseBody
