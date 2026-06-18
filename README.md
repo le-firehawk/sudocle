@@ -112,8 +112,12 @@ server.
 Alternatively, you can run Sudocle with [Docker](https://www.docker.com/) as
 follows:
 
-    docker build -t sudocle .
+    docker build -f docker/Dockerfile -t sudocle .
     docker run -it -p 80:3000 --name sudocle --rm sudocle
+
+You can also start Sudocle with Docker Compose:
+
+    docker compose up --build
 
 Then, open <http://localhost/sudocle/>.
 
