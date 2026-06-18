@@ -1,0 +1,1060 @@
+"use client"
+
+import Button from "../../components/Button"
+import HomePage from "../../components/HomePage"
+import Modal from "../../components/Modal"
+import Pad from "../../components/Pad"
+import Sidebar from "../../components/Sidebar"
+import StatusBar from "../../components/StatusBar"
+import Grid from "../../components/grid/Grid"
+import { GameState, useGame } from "../../components/hooks/useGame"
+import { useSettings } from "../../components/hooks/useSettings"
+import { useSidebar } from "../../components/hooks/useSidebar"
+import {
+  ACTION_ALL,
+  ACTION_CLEAR,
+  ACTION_DOWN,
+  ACTION_LEFT,
+  ACTION_PUSH,
+  ACTION_REMOVE,
+  ACTION_RIGHT,
+  ACTION_ROTATE,
+  ACTION_SET,
+  ACTION_UP,
+  DigitsAction,
+  TYPE_CHECK,
+  TYPE_INIT,
+  TYPE_MODE,
+  TYPE_MODE_GROUP,
+  TYPE_REDO,
+  TYPE_SELECTION,
+  TYPE_UNDO,
+  TYPE_UNPAUSE,
+} from "../../components/lib/Actions"
+import {
+  MODE_CENTRE,
+  MODE_COLOUR,
+  MODE_CORNER,
+  MODE_NORMAL,
+  MODE_PEN,
+} from "../../components/lib/Modes"
+import { convertCTCPuzzle } from "../../components/lib/ctcpuzzleconverter"
+import { convertFPuzzle } from "../../components/lib/fpuzzlesconverter"
+import lzwDecompress from "../../components/lib/lzwdecompressor"
+import { Data } from "../../components/types/Data"
+import Popup from "../../reuse/Popup"
+import {
+  SeedDifficulty,
+  buildSeedPuzzle,
+  isSeedPuzzleId,
+  randomSeedPuzzleId,
+} from "../../reuse/seedPuzzle"
+import clsx from "clsx"
+import { enableMapSet } from "immer"
+import { Check, CircleEllipsis, Frown, Pause, Sprout } from "lucide-react"
+import {
+  MouseEvent,
+  ReactNode,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react"
+import { useShallow } from "zustand/react/shallow"
+
+enableMapSet()
+
+const seedDifficulties: SeedDifficulty[] = [
+  "beginner",
+  "intermediate",
+  "hard",
+  "expert",
+  "hellish",
+]
+
+function difficultyFromUrl(): SeedDifficulty | undefined {
+  if (typeof window === "undefined") {
+    return undefined
+  }
+  let difficulty = new URLSearchParams(window.location.search).get("difficulty")
+  return seedDifficulties.includes(difficulty as SeedDifficulty)
+    ? (difficulty as SeedDifficulty)
+    : undefined
+}
+
+const IndexPage = () => {
+  const game: GameState = useGame()
+  const {
+    updateGame,
+    paused,
+    saveGame,
+    hasSavedGame,
+    loadSavedGame,
+    deleteSavedGame,
+  } = useGame(
+    useShallow(state => ({
+      updateGame: state.updateGame,
+      paused: state.paused,
+      saveGame: state.saveGame,
+      hasSavedGame: state.hasSavedGame,
+      loadSavedGame: state.loadSavedGame,
+      deleteSavedGame: state.deleteSavedGame,
+    })),
+  )
+  const { colourPalette, seedDifficulty } = useSettings(
+    useShallow(state => ({
+      colourPalette: state.colourPalette,
+      seedDifficulty: state.seedDifficulty,
+    })),
+  )
+  const { sidebarVisible, activeSidebarTabId, onSidebarTabClick } = useSidebar(
+    useShallow(state => ({
+      sidebarVisible: state.visible,
+      activeSidebarTabId: state.activeTabId,
+      onSidebarTabClick: state.onTabClick,
+    })),
+  )
+  const appRef = useRef<HTMLDivElement>(null)
+  const gameContainerRef = useRef<HTMLDivElement>(null)
+  const gridContainerRef = useRef<HTMLDivElement>(null)
+  const padContainerRef = useRef<HTMLDivElement>(null)
+  const [gridMaxWidth, setGridMaxWidth] = useState(0)
+  const [gridMaxHeight, setGridMaxHeight] = useState(0)
+  const [portrait, setPortrait] = useState(false)
+  const [rendering, setRendering] = useState(true)
+  const [firstResizing, setFirstResizing] = useState(true)
+  const [error, setError] = useState<ReactNode>()
+  const [solvedModalOpen, setSolvedModalOpen] = useState<boolean>(false)
+  const [errorModalOpen, setErrorModalOpen] = useState<boolean>(false)
+  const [isTest, setIsTest] = useState(false)
+  const [fontsLoaded, setFontsLoaded] = useState(false)
+  const [pendingDigitAction, setPendingDigitAction] = useState<DigitsAction>()
+  const [completionActionsOpen, setCompletionActionsOpen] = useState(false)
+  const [summaryNow, setSummaryNow] = useState(+new Date())
+  const didCheckForSavedGame = useRef<boolean>(false)
+  const [showHome, setShowHome] = useState(false)
+
+  function onMouseDown(e: MouseEvent<HTMLDivElement>) {
+    // check if we hit a target that would clear the selection
+    let shouldClearSelection =
+      e.target === appRef.current ||
+      e.target === gameContainerRef.current ||
+      e.target === gridContainerRef.current ||
+      e.target === padContainerRef.current ||
+      // pad itself but not its buttons
+      (e.target as Node).parentElement === padContainerRef.current
+
+    if (shouldClearSelection) {
+      updateGame({
+        type: TYPE_SELECTION,
+        action: ACTION_CLEAR,
+      })
+    }
+  }
+
+  const onFinishRender = useCallback(() => setRendering(false), [])
+
+  const onFinishFirstResize = useCallback(() => setFirstResizing(false), [])
+
+  const onContinue = useCallback(() => {
+    if (sidebarVisible) {
+      onSidebarTabClick(activeSidebarTabId)
+    }
+    updateGame({
+      type: TYPE_UNPAUSE,
+    })
+  }, [activeSidebarTabId, onSidebarTabClick, sidebarVisible, updateGame])
+
+  const loadCompressedPuzzleFromString = useCallback(
+    (id: string, str: string) => {
+      let puzzle: string
+      if (str.length > 16 && str.startsWith("fpuzzles")) {
+        puzzle = decodeURIComponent(str.substring(8))
+      } else if (str.length > 16 && str.startsWith("fpuz")) {
+        puzzle = decodeURIComponent(str.substring(4))
+      } else if (
+        str.length > 16 &&
+        (str.startsWith("ctc") || str.startsWith("scl"))
+      ) {
+        puzzle = decodeURIComponent(str.substring(3))
+      } else {
+        setError("Unsupported puzzle ID")
+        return
+      }
+
+      puzzle = puzzle.replace(/ /g, "+")
+
+      let buf = Buffer.from(puzzle, "base64")
+      let decompressedStr: string | undefined
+      try {
+        decompressedStr = lzwDecompress(buf)
+      } catch {
+        decompressedStr = undefined
+      }
+
+      if (decompressedStr === undefined) {
+        setError("Puzzle ID could not be decompressed")
+        return
+      }
+
+      let convertedPuzzle: Data
+      if (
+        str.length > 16 &&
+        (str.startsWith("fpuzzles") || str.startsWith("fpuz"))
+      ) {
+        convertedPuzzle = convertFPuzzle(JSON.parse(decompressedStr))
+      } else if (
+        str.length > 16 &&
+        (str.startsWith("ctc") || str.startsWith("scl"))
+      ) {
+        convertedPuzzle = convertCTCPuzzle(decompressedStr)
+      } else {
+        setError("Unsupported puzzle ID")
+        return
+      }
+
+      updateGame({
+        type: TYPE_INIT,
+        puzzleId: id,
+        data: convertedPuzzle,
+      })
+    },
+    [updateGame],
+  )
+
+  const loadFromTest = useCallback(() => {
+    let w = window as any
+    w.initTestGrid = function (json: any) {
+      if (
+        json.fpuzzles !== undefined ||
+        json.ctc !== undefined ||
+        json.scl !== undefined ||
+        json.fpuz !== undefined
+      ) {
+        let puzzle = json.fpuzzles ?? json.ctc ?? json.scl ?? json.fpuz
+        puzzle = decodeURIComponent(puzzle).replace(/ /g, "+")
+        let buf = Buffer.from(puzzle, "base64")
+        let str = lzwDecompress(buf)!
+        if (json.fpuzzles !== undefined || json.fpuz !== undefined) {
+          json = convertFPuzzle(JSON.parse(str))
+        } else {
+          json = convertCTCPuzzle(str)
+        }
+      }
+      setIsTest(true)
+      updateGame({
+        type: TYPE_INIT,
+        puzzleId: JSON.stringify(json),
+        data: json,
+      })
+      return json
+    }
+  }, [updateGame])
+
+  const loadFromId = useCallback(
+    async (id: string, data: string = id) => {
+      if (
+        data.startsWith("fpuzzles") ||
+        data.startsWith("fpuz") ||
+        data.startsWith("ctc") ||
+        data.startsWith("scl")
+      ) {
+        loadCompressedPuzzleFromString(id, data)
+      } else if (data === "test") {
+        loadFromTest()
+      } else if (data.startsWith("{")) {
+        let json
+        try {
+          json = JSON.parse(data)
+        } catch {
+          try {
+            json = convertCTCPuzzle(data)
+          } catch (e) {
+            setError(
+              <>Failed to load puzzle with ID &lsquo;{id}’. Parse error.</>,
+            )
+            throw e
+          }
+        }
+        updateGame({
+          type: TYPE_INIT,
+          puzzleId: id,
+          data: json,
+        })
+      } else if (isSeedPuzzleId(data)) {
+        updateGame({
+          type: TYPE_INIT,
+          puzzleId: id,
+          data: buildSeedPuzzle(data, difficultyFromUrl() ?? seedDifficulty),
+        })
+      } else {
+        let responseBody
+        try {
+          let u = `${process.env.__NEXT_ROUTER_BASEPATH}/puzzles/`
+          if (data !== "") {
+            u += `${data}/`
+          }
+          let response = await fetch(u)
+          if (response.redirected) {
+            let redirected = new URL(response.url)
+            let parts = redirected.pathname.split("/puzzles/")
+            if (parts[1]) {
+              let visibleId = decodeURIComponent(parts[1].replace(/\/$/, ""))
+              window.history.replaceState(
+                null,
+                "",
+                `${process.env.__NEXT_ROUTER_BASEPATH}/${encodeURIComponent(visibleId)}/`,
+              )
+              id = visibleId
+            }
+          }
+          responseBody = await response.text()
+          if (response.status !== 200) {
+            throw new Error(responseBody)
+          }
+        } catch (e: any) {
+          if (e.message !== undefined) {
+            setError(e.message)
+          } else {
+            console.error(e)
+          }
+          throw e
+        }
+        await loadFromId(id, responseBody)
+      }
+    },
+    [loadCompressedPuzzleFromString, loadFromTest, seedDifficulty, updateGame],
+  )
+
+  // load game data
+  useEffect(() => {
+    if (game.data.cells.length > 0) {
+      // game data already loaded
+      return
+    }
+
+    let id = window.location.pathname
+    if (process.env.__NEXT_ROUTER_BASEPATH) {
+      id = id.substring(process.env.__NEXT_ROUTER_BASEPATH.length)
+    }
+    if (id.endsWith("/")) {
+      id = id.substring(0, id.length - 1)
+    }
+    if (id.startsWith("/")) {
+      id = id.substring(1)
+    }
+
+    if (id === null || id === "") {
+      let s = new URLSearchParams(window.location.search)
+      let puzzleId = s.get("puzzleid")
+      let fpuzzlesId = s.get("fpuzzles")
+      let fpuz = s.get("fpuz")
+      let ctcId = s.get("ctc")
+      let sclId = s.get("scl")
+      if (
+        fpuzzlesId === null &&
+        puzzleId !== null &&
+        puzzleId.startsWith("fpuzzles")
+      ) {
+        fpuzzlesId = puzzleId
+      }
+      if (fpuz === null && puzzleId !== null && puzzleId.startsWith("fpuz")) {
+        fpuz = puzzleId
+      }
+      if (ctcId === null && puzzleId !== null && puzzleId.startsWith("ctc")) {
+        ctcId = puzzleId
+      }
+      if (sclId === null && puzzleId !== null && puzzleId.startsWith("scl")) {
+        sclId = puzzleId
+      }
+      if (fpuzzlesId !== null) {
+        id = fpuzzlesId
+        if (!id.startsWith("fpuzzles")) {
+          id = "fpuzzles" + id
+        }
+      }
+      if (fpuz !== null) {
+        id = fpuz
+        if (!id.startsWith("fpuz")) {
+          id = "fpuz" + id
+        }
+      }
+      if (ctcId !== null) {
+        id = ctcId
+        if (!id.startsWith("ctc")) {
+          id = "ctc" + id
+        }
+      }
+      if (sclId !== null) {
+        id = sclId
+        if (!id.startsWith("scl")) {
+          id = "scl" + id
+        }
+      }
+
+      let testId = s.get("test")
+      if (testId !== null) {
+        id = "test"
+      }
+    }
+
+    if (id === "") {
+      fetch(`${process.env.__NEXT_ROUTER_BASEPATH}/puzzles/`)
+        .then(response => {
+          if (response.redirected) {
+            let redirected = new URL(response.url)
+            let parts = redirected.pathname.split("/puzzles/")
+            if (parts[1]) {
+              let visibleId = decodeURIComponent(parts[1].replace(/\/$/, ""))
+              window.location.replace(
+                `${process.env.__NEXT_ROUTER_BASEPATH}/${encodeURIComponent(visibleId)}/`,
+              )
+              return
+            }
+          }
+          setShowHome(true)
+        })
+        .catch(() => setShowHome(true))
+      return
+    }
+
+    loadFromId(id)
+  }, [game.data, loadFromId])
+
+  useEffect(() => {
+    if (game.data.cells.length === 0) {
+      // game is not loaded yet
+      return
+    }
+
+    setFontsLoaded(true)
+  }, [game.data])
+
+  // register keyboard handlers
+  useEffect(() => {
+    let metaPressed = false
+    let shiftPressed = false
+    let altPressed = false
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === " ") {
+        updateGame({
+          type: TYPE_MODE,
+          action: ACTION_ROTATE,
+        })
+        e.preventDefault()
+      } else if (
+        e.key === "Tab" &&
+        !metaPressed &&
+        !shiftPressed &&
+        !altPressed
+      ) {
+        updateGame({
+          type: TYPE_MODE_GROUP,
+          action: ACTION_ROTATE,
+        })
+        e.preventDefault()
+      } else if (e.key === "Meta" || e.key === "Control") {
+        updateGame({
+          type: TYPE_MODE,
+          action: ACTION_PUSH,
+          mode: MODE_CENTRE,
+        })
+        metaPressed = true
+        e.preventDefault()
+      } else if (e.key === "Shift") {
+        updateGame({
+          type: TYPE_MODE,
+          action: ACTION_PUSH,
+          mode: MODE_CORNER,
+        })
+        shiftPressed = true
+        e.preventDefault()
+      } else if (e.key === "Alt") {
+        updateGame({
+          type: TYPE_MODE,
+          action: ACTION_PUSH,
+          mode: MODE_COLOUR,
+        })
+        altPressed = true
+        e.preventDefault()
+      } else if ((e.key === "z" || e.key === "Z") && (e.metaKey || e.ctrlKey)) {
+        updateGame({
+          type: e.shiftKey ? TYPE_REDO : TYPE_UNDO,
+        })
+        e.preventDefault()
+      } else if (e.key === "y" && (e.metaKey || e.ctrlKey)) {
+        updateGame({
+          type: TYPE_REDO,
+        })
+        e.preventDefault()
+      } else if (e.key === "a" && (e.metaKey || e.ctrlKey)) {
+        updateGame({
+          type: TYPE_SELECTION,
+          action: ACTION_ALL,
+        })
+        e.preventDefault()
+      } else if (e.code === "KeyZ") {
+        updateGame({
+          type: TYPE_MODE,
+          action: ACTION_SET,
+          mode: MODE_NORMAL,
+        })
+        e.preventDefault()
+      } else if (e.code === "KeyX") {
+        updateGame({
+          type: TYPE_MODE,
+          action: ACTION_SET,
+          mode: MODE_CORNER,
+        })
+        e.preventDefault()
+      } else if (e.code === "KeyC") {
+        updateGame({
+          type: TYPE_MODE,
+          action: ACTION_SET,
+          mode: MODE_CENTRE,
+        })
+        e.preventDefault()
+      } else if (e.code === "KeyV") {
+        updateGame({
+          type: TYPE_MODE,
+          action: ACTION_SET,
+          mode: MODE_COLOUR,
+        })
+        e.preventDefault()
+      } else if (e.code === "KeyP") {
+        updateGame({
+          type: TYPE_MODE,
+          action: ACTION_SET,
+          mode: MODE_PEN,
+        })
+        e.preventDefault()
+      } else if (e.key === "ArrowRight") {
+        updateGame({
+          type: TYPE_SELECTION,
+          action: ACTION_RIGHT,
+          append: e.metaKey || e.ctrlKey,
+        })
+        e.preventDefault()
+      } else if (e.key === "ArrowLeft") {
+        updateGame({
+          type: TYPE_SELECTION,
+          action: ACTION_LEFT,
+          append: e.metaKey || e.ctrlKey,
+        })
+        e.preventDefault()
+      } else if (e.key === "ArrowUp") {
+        updateGame({
+          type: TYPE_SELECTION,
+          action: ACTION_UP,
+          append: e.metaKey || e.ctrlKey,
+        })
+        e.preventDefault()
+      } else if (e.key === "ArrowDown") {
+        updateGame({
+          type: TYPE_SELECTION,
+          action: ACTION_DOWN,
+          append: e.metaKey || e.ctrlKey,
+        })
+        e.preventDefault()
+      }
+    }
+
+    function onKeyUp(e: KeyboardEvent) {
+      if (e.key === "Meta" || e.key === "Control") {
+        updateGame({
+          type: TYPE_MODE,
+          action: ACTION_REMOVE,
+          mode: MODE_CENTRE,
+        })
+        metaPressed = false
+        e.preventDefault()
+      } else if (e.key === "Shift") {
+        updateGame({
+          type: TYPE_MODE,
+          action: ACTION_REMOVE,
+          mode: MODE_CORNER,
+        })
+        shiftPressed = false
+        e.preventDefault()
+      } else if (e.key === "Alt") {
+        updateGame({
+          type: TYPE_MODE,
+          action: ACTION_REMOVE,
+          mode: MODE_COLOUR,
+        })
+        altPressed = false
+        e.preventDefault()
+      }
+    }
+
+    function onBlur() {
+      if (metaPressed) {
+        updateGame({
+          type: TYPE_MODE,
+          action: ACTION_REMOVE,
+          mode: MODE_CENTRE,
+        })
+        metaPressed = false
+      } else if (shiftPressed) {
+        updateGame({
+          type: TYPE_MODE,
+          action: ACTION_REMOVE,
+          mode: MODE_CORNER,
+        })
+        shiftPressed = false
+      } else if (altPressed) {
+        updateGame({
+          type: TYPE_MODE,
+          action: ACTION_REMOVE,
+          mode: MODE_COLOUR,
+        })
+        altPressed = false
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown)
+    window.addEventListener("keyup", onKeyUp)
+    window.addEventListener("blur", onBlur)
+
+    return () => {
+      window.removeEventListener("blur", onBlur)
+      window.removeEventListener("keyup", onKeyUp)
+      window.removeEventListener("keydown", onKeyDown)
+    }
+  }, [updateGame])
+
+  // register resize handler
+  useEffect(() => {
+    if (padContainerRef.current === null) {
+      return
+    }
+
+    let oldW = 0
+    let oldH = 0
+
+    function onResize() {
+      let style = window.getComputedStyle(gameContainerRef.current!)
+      let w =
+        gameContainerRef.current!.clientWidth -
+        parseInt(style.paddingLeft) -
+        parseInt(style.paddingRight)
+      let h =
+        gameContainerRef.current!.clientHeight -
+        parseInt(style.paddingTop) -
+        parseInt(style.paddingBottom)
+      let portrait = window.innerHeight > window.innerWidth
+      let newW
+      let newH
+      if (portrait) {
+        newW = w
+        newH = h - padContainerRef.current!.clientHeight
+      } else {
+        newW = w - padContainerRef.current!.clientWidth
+        newH = h
+      }
+      if (oldW !== newW || oldH !== newH) {
+        setGridMaxWidth(newW)
+        setGridMaxHeight(newH)
+        oldW = newW
+        oldH = newH
+      }
+      setPortrait(portrait)
+    }
+
+    window.addEventListener("resize", onResize)
+    onResize()
+
+    return () => {
+      window.removeEventListener("resize", onResize)
+    }
+  }, [rendering])
+
+  // register beforeunload handler
+  useEffect(() => {
+    if (
+      typeof process !== "undefined" &&
+      process.env !== undefined &&
+      process.env.NODE_ENV === "development"
+    ) {
+      // disable this feature in development mode
+      return
+    }
+
+    function onBeforeUnload(e: BeforeUnloadEvent) {
+      if (game.nextUndoState === 0 || game.solved) {
+        // nothing to lose - we can close the tab
+        return
+      }
+
+      e.preventDefault()
+
+      // Chrome requires returnValue to be set
+      e.returnValue = ""
+    }
+
+    window.addEventListener("beforeunload", onBeforeUnload)
+
+    return () => {
+      window.removeEventListener("beforeunload", onBeforeUnload)
+    }
+  }, [game.nextUndoState, game.solved])
+
+  useEffect(() => {
+    switch (game.errors.type) {
+      case "unknown":
+        setErrorModalOpen(false)
+        break
+
+      case "wrongsolution":
+      case "notstarted":
+      case "goodsofar":
+      case "badsofar":
+        setErrorModalOpen(true)
+        break
+
+      case "solved":
+        setSolvedModalOpen(true)
+        break
+    }
+  }, [game.errors, game.checkCounter])
+
+  useEffect(() => {
+    if (
+      game.data.cells.length === 0 ||
+      game.solved ||
+      game.errors.type !== "unknown"
+    ) {
+      return
+    }
+    let nCells = game.data.cells.reduce((acc, row) => acc + row.length, 0)
+    if (nCells > 0 && game.digits.size === nCells) {
+      updateGame({ type: TYPE_CHECK })
+    }
+  }, [game.data, game.digits, game.errors.type, game.solved, updateGame])
+
+  // load saved game after initialize and save game state on pause
+  useEffect(() => {
+    if (game.data.cells.length === 0) {
+      // game is not loaded yet
+      return
+    }
+
+    if (!didCheckForSavedGame.current) {
+      // resume game if there is a saved state
+      if (hasSavedGame()) {
+        loadSavedGame()
+        updateGame({ type: TYPE_UNPAUSE })
+      }
+      didCheckForSavedGame.current = true
+    } else {
+      // save game on pause and delete saved game on unpause
+      if (paused) {
+        saveGame()
+      } else {
+        deleteSavedGame()
+      }
+    }
+  }, [
+    game.data,
+    paused,
+    saveGame,
+    hasSavedGame,
+    loadSavedGame,
+    deleteSavedGame,
+    updateGame,
+  ])
+
+  useEffect(() => {
+    if (
+      game.data.cells.length === 0 ||
+      game.solved ||
+      game.nextUndoState === 0
+    ) {
+      return
+    }
+    saveGame()
+  }, [game.data.cells.length, game.nextUndoState, game.solved, saveGame])
+
+  useEffect(() => {
+    let interval = window.setInterval(() => setSummaryNow(+new Date()), 1000)
+    return () => window.clearInterval(interval)
+  }, [])
+
+  useEffect(() => {
+    ;(window as any).sudocleConfirmDigit = (action: DigitsAction) => {
+      setPendingDigitAction(action)
+    }
+
+    return () => {
+      delete (window as any).sudocleConfirmDigit
+    }
+  }, [])
+
+  function onRestart() {
+    if (sidebarVisible) {
+      onSidebarTabClick(activeSidebarTabId)
+    }
+    updateGame({ type: TYPE_INIT, puzzleId: game.puzzleId, data: game.data })
+    updateGame({ type: TYPE_UNPAUSE })
+  }
+
+  function goHome() {
+    window.location.href = `${process.env.__NEXT_ROUTER_BASEPATH}/`
+  }
+
+  function goNewPuzzle() {
+    window.location.href = `${process.env.__NEXT_ROUTER_BASEPATH}/${randomSeedPuzzleId()}/`
+  }
+
+  function currentElapsed(now = +new Date()) {
+    return game.paused
+      ? game.timerOnPause
+      : Math.max(0, (game.completedAt ?? now) - game.startedAt)
+  }
+
+  function completionFace() {
+    let elapsed = currentElapsed()
+    if (game.hintsUsed === 0 && game.mistakes === 0) {
+      return "😁"
+    }
+    if (game.hintsUsed === 0) {
+      return "🙂"
+    }
+    if ((game.hintsUsed > 0 && game.mistakes > 0) || elapsed > 30 * 60 * 1000) {
+      return "😢"
+    }
+    return "😐"
+  }
+
+  function formatElapsed(ms: number) {
+    let seconds = Math.max(0, Math.floor(ms / 1000))
+    let minutes = Math.floor(seconds / 60)
+    let hours = Math.floor(minutes / 60)
+    seconds %= 60
+    minutes %= 60
+    return `${hours > 0 ? `${hours}:` : ""}${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+  }
+
+  const onConfirmSafetyMove = useCallback(() => {
+    if (pendingDigitAction === undefined) {
+      return
+    }
+    updateGame({
+      ...pendingDigitAction,
+      confirmed: true,
+    })
+    setPendingDigitAction(undefined)
+  }, [pendingDigitAction, updateGame])
+
+  useEffect(() => {
+    if (pendingDigitAction === undefined) {
+      return
+    }
+
+    function onSafetyKeyDown(e: KeyboardEvent) {
+      if (e.key === "Enter") {
+        e.preventDefault()
+        onConfirmSafetyMove()
+      }
+    }
+
+    window.addEventListener("keydown", onSafetyKeyDown)
+    return () => window.removeEventListener("keydown", onSafetyKeyDown)
+  }, [onConfirmSafetyMove, pendingDigitAction])
+
+  if (showHome) {
+    return <HomePage />
+  }
+
+  return (
+    <>
+      <div
+        className="bg-bg text-fg h-screen"
+        data-colour-palette={colourPalette}
+        onMouseDown={onMouseDown}
+        ref={appRef}
+      >
+        {!isTest && <StatusBar />}
+        {!isTest && game.mode !== MODE_NORMAL && (
+          <div className="fixed top-(--status-bar-height) left-0 right-0 z-20000 bg-modal-warning text-fg text-center text-[0.65rem] py-2 px-4 shadow-sm dark:bg-primary dark:text-bg">
+            In Annotation Mode
+          </div>
+        )}
+        {!error && (rendering || firstResizing) ? (
+          <div className="text-fg-500 h-dvh w-dvw bg-bg z-100 justify-center items-center flex">
+            <div>Loading ...</div>
+          </div>
+        ) : undefined}
+        <div
+          className={clsx(
+            "w-screen flex justify-center items-center pb-4 md:pb-11 px-2 md:px-12 h-dvh portrait:flex-col transition-transform duration-300",
+            game.mode !== MODE_NORMAL
+              ? "pt-[calc(var(--status-bar-height)+12*var(--spacing))]"
+              : "pt-[calc(var(--status-bar-height)+4*var(--spacing))]",
+            sidebarVisible &&
+              "md:-translate-x-[min(18rem,calc((100vw-800px)/2))]",
+          )}
+          ref={gameContainerRef}
+        >
+          {game.data && game.data.cells.length > 0 && fontsLoaded ? (
+            <>
+              {!game.paused && (
+                <div className="fixed left-8 top-1/2 z-10 hidden -translate-y-1/2 flex-col gap-3 bg-transparent p-0 text-base font-bold leading-tight text-fg/90 xl:flex">
+                  <div className="text-fg/70">Time</div>
+                  <div>{formatElapsed(currentElapsed(summaryNow))}</div>
+                  <div className="text-fg/70">Mistakes</div>
+                  <div>{game.mistakes}</div>
+                  <div className="text-fg/70">Hints</div>
+                  <div>{game.hintsUsed}</div>
+                </div>
+              )}
+              <div
+                className="flex flex-col justify-center items-center h-full"
+                ref={gridContainerRef}
+              >
+                <Grid
+                  portrait={portrait}
+                  maxWidth={gridMaxWidth}
+                  maxHeight={gridMaxHeight}
+                  onFinishRender={onFinishRender}
+                  onFinishFirstResize={onFinishFirstResize}
+                  fogDisplayOptions={{
+                    enableFog: true,
+                    enableDropShadow: !isTest,
+                  }}
+                />
+              </div>
+              {!rendering ? (
+                <div className="pad-container" ref={padContainerRef}>
+                  <Pad />
+                </div>
+              ) : undefined}
+            </>
+          ) : error ? (
+            <div className="text-alert text-center">{error}</div>
+          ) : undefined}
+          {paused && (
+            <div className="fixed inset-0 bg-bg/75 flex justify-center items-center backdrop-blur-lg">
+              <div className="flex flex-col justify-center items-center mb-8">
+                <div className="font-medium pt-5 flex items-center text-sm mb-1">
+                  <Pause size="1.3rem" className="mr-1 mb-px" /> Game paused
+                </div>
+                <div className="text-[0.7rem] mb-4">
+                  {formatElapsed(game.timerOnPause)} · Hints {game.hintsUsed} ·
+                  Mistakes {game.mistakes}
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-[0.6rem] mt-0.5 w-52">
+                  <Button onClick={onContinue}>Continue</Button>
+                  <Button onClick={onRestart}>↻ Restart</Button>
+                  <Button onClick={goHome}>Home</Button>
+                  <Button onClick={goNewPuzzle}>New Puzzle</Button>
+                </div>
+              </div>
+              <div className="absolute bottom-3 text-[0.6rem] text-gray-600 dark:text-gray-400 flex flex-row items-start gap-1 px-4">
+                <span className="text-green-700 dark:text-green-600 mb-[0.5rem]">
+                  <Check size="0.9rem" />
+                </span>
+                Game saved. You may now close this page and continue later.
+              </div>
+            </div>
+          )}
+        </div>
+        <Sidebar />
+
+        <Modal
+          isOpen={solvedModalOpen}
+          title="Puzzle complete"
+          type="success"
+          icon={
+            <span className="text-[3.25em] leading-none">
+              {completionFace()}
+            </span>
+          }
+          onOpenChange={open => {
+            setSolvedModalOpen(open)
+            if (!open) {
+              setCompletionActionsOpen(true)
+            }
+          }}
+        >
+          <div className="space-y-1">
+            <div>Time: {formatElapsed(currentElapsed())}</div>
+            <div>Mistakes: {game.mistakes}</div>
+            <div>Hints used: {game.hintsUsed}</div>
+          </div>
+        </Modal>
+        <Popup
+          isOpen={completionActionsOpen}
+          title="What next?"
+          type="success"
+          message="Start another puzzle or return home."
+          responseButtons={[
+            { label: "Home", onClick: goHome },
+            { label: "New Puzzle", active: true, onClick: goNewPuzzle },
+          ]}
+          onOpenChange={setCompletionActionsOpen}
+        />
+        <Popup
+          isOpen={pendingDigitAction !== undefined}
+          title="Safety check"
+          type="warning"
+          message={`You are about to enter a ${pendingDigitAction?.digit}`}
+          responseButtons={[
+            {
+              label: "Cancel",
+              onClick: () => setPendingDigitAction(undefined),
+            },
+            { label: "Confirm", active: true, onClick: onConfirmSafetyMove },
+          ]}
+          onOpenChange={open => {
+            if (!open) {
+              setPendingDigitAction(undefined)
+            }
+          }}
+        />
+        <Modal
+          isOpen={errorModalOpen}
+          title={
+            game.errors.type === "notstarted"
+              ? "Let’s go!"
+              : game.errors.type === "goodsofar"
+                ? "Incomplete"
+                : "Sorry"
+          }
+          type={
+            game.errors.type === "notstarted" ||
+            game.errors.type === "goodsofar"
+              ? "warning"
+              : "alert"
+          }
+          icon={
+            game.errors.type === "notstarted" ? (
+              <Sprout size="3.25em" />
+            ) : game.errors.type === "goodsofar" ? (
+              <CircleEllipsis size="3.25em" />
+            ) : (
+              <Frown size="3.25em" />
+            )
+          }
+          onOpenChange={open => setErrorModalOpen(open)}
+        >
+          {(() => {
+            switch (game.errors.type) {
+              case "notstarted":
+                return "You haven't started solving yet"
+
+              case "goodsofar":
+                return "Your solution looks good so far"
+
+              default:
+                return "Something seems to be wrong"
+            }
+          })()}
+        </Modal>
+      </div>
+    </>
+  )
+}
+
+export default IndexPage

@@ -1,0 +1,15 @@
+services:
+  sudocle:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        MATOMO_URL: ${MATOMO_URL:-}
+        MATOMO_SITE_ID: ${MATOMO_SITE_ID:-}
+        SUDOCLE_CORS_ALLOW_ORIGIN: ${SUDOCLE_CORS_ALLOW_ORIGIN:-}
+    image: sudocle:latest
+    environment:
+      PRELOAD_PUZZLES: ${PRELOAD_PUZZLES:-0}
+    ports:
+      - "80:3000"
+    restart: unless-stopped

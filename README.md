@@ -1,7 +1,7 @@
 <h1 align="center">
   <br>
   <br>
-  <img width="500" src="assets/logo.svg" alt="Sudocle">
+  <img width="500" src="src/assets/logo.svg" alt="Sudocle">
   <br>
   <br>
   <br>
@@ -112,8 +112,12 @@ server.
 Alternatively, you can run Sudocle with [Docker](https://www.docker.com/) as
 follows:
 
-    docker build -t sudocle .
+    docker build -f docker/Dockerfile -t sudocle .
     docker run -it -p 80:3000 --name sudocle --rm sudocle
+
+You can also start Sudocle with Docker Compose:
+
+    docker compose up --build
 
 Then, open <http://localhost/sudocle/>.
 
