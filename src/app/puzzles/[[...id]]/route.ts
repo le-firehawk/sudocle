@@ -37,10 +37,12 @@ export async function GET(
     if (params.id === undefined || params.id.length === 0) {
       if (process.env.PRELOAD_PUZZLES === "1") {
         let seed = randomSeedPuzzleId()
-        return NextResponse.redirect(new URL(
+        return NextResponse.redirect(
+          new URL(
             `${process.env.__NEXT_ROUTER_BASEPATH}/puzzles/${seed}/`,
             request.url,
-          ))
+          ),
+        )
       }
 
       let r = new Response(JSON.stringify(emptyGrid))

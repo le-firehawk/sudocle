@@ -35,6 +35,10 @@ import {
   MODE_NORMAL,
   MODE_PEN,
 } from "../../components/lib/Modes"
+import {
+  buildSeedPuzzle,
+  isSeedPuzzleId,
+} from "../../reuse/seedPuzzle"
 import { convertCTCPuzzle } from "../../components/lib/ctcpuzzleconverter"
 import { convertFPuzzle } from "../../components/lib/fpuzzlesconverter"
 import lzwDecompress from "../../components/lib/lzwdecompressor"
@@ -245,6 +249,12 @@ const IndexPage = () => {
           puzzleId: id,
           data: json,
         })
+      } else if (isSeedPuzzleId(data)) {
+        updateGame({
+          type: TYPE_INIT,
+          puzzleId: id,
+          data: buildSeedPuzzle(data),
+        })
       } else {
         let responseBody
         try {
@@ -357,20 +367,22 @@ const IndexPage = () => {
     }
 
     if (id === "") {
-      fetch(`${process.env.__NEXT_ROUTER_BASEPATH}/puzzles/`).then(response => {
-        if (response.redirected) {
-          let redirected = new URL(response.url)
-          let parts = redirected.pathname.split("/puzzles/")
-          if (parts[1]) {
-            let visibleId = decodeURIComponent(parts[1].replace(/\/$/, ""))
-            window.location.replace(
-              `${process.env.__NEXT_ROUTER_BASEPATH}/${encodeURIComponent(visibleId)}/`,
-            )
-            return
+      fetch(`${process.env.__NEXT_ROUTER_BASEPATH}/puzzles/`)
+        .then(response => {
+          if (response.redirected) {
+            let redirected = new URL(response.url)
+            let parts = redirected.pathname.split("/puzzles/")
+            if (parts[1]) {
+              let visibleId = decodeURIComponent(parts[1].replace(/\/$/, ""))
+              window.location.replace(
+                `${process.env.__NEXT_ROUTER_BASEPATH}/${encodeURIComponent(visibleId)}/`,
+              )
+              return
+            }
           }
-        }
-        setShowHome(true)
-      })
+          setShowHome(true)
+        })
+        .catch(() => setShowHome(true))
       return
     }
 

@@ -3,19 +3,18 @@
 import { usePathname } from "next/navigation"
 import { useEffect, useRef } from "react"
 
-if (
-  typeof window !== "undefined" &&
-  process.env.matomoUrl !== undefined &&
-  process.env.matomoSiteId !== undefined
-) {
+const matomoUrl = process.env.matomoUrl?.trim()
+const matomoSiteId = process.env.matomoSiteId?.trim()
+
+if (typeof window !== "undefined" && matomoUrl && matomoSiteId) {
   // Matomo tracker code
   let _paq = ((window as any)._paq = (window as any)._paq || [])
-  _paq.push(["setTrackerUrl", process.env.matomoUrl! + "matomo.php"])
-  _paq.push(["setSiteId", process.env.matomoSiteId!])
+  _paq.push(["setTrackerUrl", matomoUrl + "matomo.php"])
+  _paq.push(["setSiteId", matomoSiteId])
   let g = document.createElement("script")
   let s = document.getElementsByTagName("script")[0]
   g.async = true
-  g.src = process.env.matomoUrl! + "matomo.js"
+  g.src = matomoUrl + "matomo.js"
   s.parentNode!.insertBefore(g, s)
 }
 
