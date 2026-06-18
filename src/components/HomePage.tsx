@@ -2,6 +2,7 @@ import Popup from "../reuse/Popup"
 import { SeedDifficulty, randomSeedPuzzleId } from "../reuse/seedPuzzle"
 import About from "./About"
 import Button from "./Button"
+import ThemeSwitcher from "./ThemeSwitcher"
 import { useSettings } from "./hooks/useSettings"
 import clsx from "clsx"
 import { Info } from "lucide-react"
@@ -64,7 +65,7 @@ const HomePage = () => {
   }
 
   return (
-    <div className="bg-bg text-fg min-h-dvh overflow-y-auto flex items-start justify-center p-6">
+    <div className="bg-bg text-fg h-dvh overflow-y-auto flex items-start justify-center p-6">
       <main className="w-full max-w-2xl rounded-2xl bg-grey-700/55 p-8 shadow-lg border border-fg-500/30 my-auto">
         <div className="mb-2 flex items-center gap-3">
           <img
@@ -84,6 +85,7 @@ const HomePage = () => {
           >
             <Info size="1rem" />
           </button>
+          <ThemeSwitcher />
         </div>
         <p className="text-fg/70 mb-6">
           Resume a saved puzzle or start a fresh random seed puzzle.

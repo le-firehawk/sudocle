@@ -12,7 +12,7 @@ const About = () => {
         target="_blank"
         rel="noreferrer"
       >
-        <div className="max-w-(--breakpoint-xs) mt-10 relative pb-2">
+        <div className="max-w-(--breakpoint-xs) mt-10 relative rounded bg-grey-700/70 p-3 pb-5">
           {theme !== "sudocle-dark" && theme !== "dark" && (
             <img src={require("../assets/logo.svg")} alt="Sudocle logo" />
           )}

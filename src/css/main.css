@@ -13,7 +13,7 @@
 
   --color-back: rgb(0 0 0);
   --color-bg: rgb(255 255 255);
-  --color-fg: rgb(51 51 51);
+  --color-fg: rgb(20 20 20);
   --color-grey-500: rgb(204 204 204);
   --color-grey-600: rgb(222 222 222);
   --color-grey-700: rgb(237 237 237);
@@ -26,8 +26,8 @@
   --color-modal-success: rgb(221 236 208);
   --color-modal-alert: rgb(232 186 186);
   --color-modal-warning: rgb(236 224 191);
-  --color-digit: rgb(28 60 146);
-  --color-digit-small: rgb(31 57 128);
+  --color-digit: rgb(0 43 140);
+  --color-digit-small: rgb(0 37 110);
   --color-button-hover: var(--color-grey-500);
   --color-button-active: var(--color-grey-500);
   --color-selection-yellow: rgb(255 223 41);
@@ -83,8 +83,8 @@
       --color-primary: rgb(130 162 194);
       --color-primary-highlight: rgb(163 187 209);
       --color-alert: rgb(191 97 106);
-      --color-digit: rgb(129 161 193);
-      --color-digit-small: rgb(163 187 210);
+      --color-digit: rgb(216 226 239);
+      --color-digit-small: rgb(200 214 231);
       --color-button-hover: rgb(112 126 153);
       --color-button-active: rgb(112 126 153);
       --color-selection-yellow: rgb(184 134 11);
