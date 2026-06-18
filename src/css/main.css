@@ -202,6 +202,11 @@
     scrollbar-color: var(--color-fg-500) var(--color-grey-700);
   }
 
+  button:not(:disabled),
+  [role="button"] {
+    cursor: pointer;
+  }
+
   a {
     @apply text-primary;
     @apply hover:text-primary-highlight;

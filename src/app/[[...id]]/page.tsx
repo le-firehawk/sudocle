@@ -111,6 +111,7 @@ const IndexPage = () => {
   const [fontsLoaded, setFontsLoaded] = useState(false)
   const [pendingDigitAction, setPendingDigitAction] = useState<DigitsAction>()
   const [completionActionsOpen, setCompletionActionsOpen] = useState(false)
+  const [summaryNow, setSummaryNow] = useState(+new Date())
   const didCheckForSavedGame = useRef<boolean>(false)
   const [showHome, setShowHome] = useState(false)
 
@@ -757,6 +758,11 @@ const IndexPage = () => {
   }, [game.data.cells.length, game.nextUndoState, game.solved, saveGame])
 
   useEffect(() => {
+    let interval = window.setInterval(() => setSummaryNow(+new Date()), 1000)
+    return () => window.clearInterval(interval)
+  }, [])
+
+  useEffect(() => {
     ;(window as any).sudocleConfirmDigit = (action: DigitsAction) => {
       setPendingDigitAction(action)
     }
@@ -852,6 +858,18 @@ const IndexPage = () => {
         >
           {game.data && game.data.cells.length > 0 && fontsLoaded ? (
             <>
+              <div className="mr-5 hidden min-w-28 flex-col gap-2 rounded-lg bg-grey-700/70 p-3 text-[0.6rem] xl:flex">
+                <div className="font-medium">Time</div>
+                <div>
+                  {formatElapsed(
+                    (game.completedAt ?? summaryNow) - game.startedAt,
+                  )}
+                </div>
+                <div className="font-medium">Mistakes</div>
+                <div>{game.mistakes}</div>
+                <div className="font-medium">Hints</div>
+                <div>{game.hintsUsed}</div>
+              </div>
               <div
                 className="flex flex-col justify-center items-center h-full"
                 ref={gridContainerRef}

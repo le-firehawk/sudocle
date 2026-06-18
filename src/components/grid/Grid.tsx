@@ -1112,7 +1112,8 @@ const Grid = ({
 
     for (let e of errorElements.current) {
       e.visible =
-        game.errors.type === "wrongsolution" && game.errors.errors.has(e.k)
+        (game.errors.type === "wrongsolution" && game.errors.errors.has(e.k)) ||
+        game.incorrectInputs.has(e.k)
     }
   }, [
     app,
@@ -1123,6 +1124,7 @@ const Grid = ({
     game.cornerMarks,
     game.digits,
     game.errors,
+    game.incorrectInputs,
     game.fogRaster,
     game.penLines,
   ])
@@ -1422,6 +1424,7 @@ const Grid = ({
     game.mode,
     game.penLines,
     game.errors,
+    game.incorrectInputs,
     game.fogRaster,
     theme,
     colourPalette,

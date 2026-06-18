@@ -112,6 +112,7 @@ export interface GameState extends PersistentGameState {
   paused: boolean
   timerOnPause: number
   checkCounter: number
+  incorrectInputs: Set<number>
   hintsUsed: number
   mistakes: number
   startedAt: number
@@ -361,6 +362,7 @@ function makeEmptyState(puzzleId?: string, data?: Data): GameState {
     paused: false,
     timerOnPause: 0,
     checkCounter: 0,
+    incorrectInputs: new Set(),
     hintsUsed: 0,
     mistakes: 0,
     startedAt: +new Date(),
@@ -1331,6 +1333,29 @@ export const useGame = create<GameStateWithActions>()(
           }
         } else {
           gameReducerNoUndo(draft, draft.mode, action)
+        }
+
+        let possibleDigitAction = action as unknown as DigitsAction
+        if (
+          (action as any).type === TYPE_DIGITS &&
+          possibleDigitAction.action === ACTION_SET &&
+          possibleDigitAction.digit !== undefined &&
+          draft.mode === MODE_NORMAL &&
+          draft.data.solution !== undefined
+        ) {
+          for (let sc of draft.selection) {
+            let [x, y] = ktoxy(sc)
+            if (draft.data.solution[y][x] !== possibleDigitAction.digit) {
+              draft.incorrectInputs.add(sc)
+            } else {
+              draft.incorrectInputs.delete(sc)
+            }
+          }
+        }
+        if ((action as any).type === TYPE_DIGITS && possibleDigitAction.action === ACTION_REMOVE) {
+          for (let sc of draft.selection) {
+            draft.incorrectInputs.delete(sc)
+          }
         }
 
         let us = makeUndoState(get())
