@@ -41,11 +41,12 @@ const ModeButton = ({ children }: { children: React.ReactNode }) => (
 
 const Pad = () => {
   const ref = useRef<HTMLDivElement>(null)
-  const { colourPalette, customColours, safetyMode } = useSettings(
+  const { colourPalette, customColours, noobMode, setNoobMode } = useSettings(
     useShallow(state => ({
       colourPalette: state.colourPalette,
       customColours: state.customColours,
-      safetyMode: state.safetyMode,
+      noobMode: state.noobMode,
+      setNoobMode: state.setNoobMode,
     })),
   )
   const { data, digits, mode, selection, solved } = useGame(
@@ -157,7 +158,7 @@ const Pad = () => {
 
   function getConflictingDigits() {
     let conflictingDigits = new Set<number>()
-    if (!safetyMode || mode !== MODE_NORMAL || selection.size === 0) {
+    if (!noobMode || mode !== MODE_NORMAL || selection.size === 0) {
       return conflictingDigits
     }
 
@@ -363,7 +364,19 @@ const Pad = () => {
       )) || <Placeholder />}
       {mode !== MODE_COLOUR && (
         <>
-          <div className="flex col-span-2">{digitButtons[9]}</div>
+          <div className="flex col-span-2">
+            {modeGroup === 0 ? (
+              <Button
+                active={noobMode}
+                noPadding
+                onClick={() => setNoobMode(!noobMode)}
+              >
+                <ModeButton>n00b</ModeButton>
+              </Button>
+            ) : (
+              <Placeholder />
+            )}
+          </div>
           <Button
             noPadding
             onClick={() => onMode(mode === MODE_PEN ? MODE_NORMAL : MODE_PEN)}
