@@ -64,6 +64,7 @@ const FONT_SIZE_CORNER_MARKS_LOW_DPI = 28
 const FONT_SIZE_CENTRE_MARKS_HIGH_DPI = 29
 const FONT_SIZE_CENTRE_MARKS_LOW_DPI = 29
 const MAX_RENDER_LOOP_TIME = 500
+const RIPPLE_LOOP_PAUSE_MS = 4000
 
 function hasCageValue(x: number, y: number, cages: GridCage[]): boolean {
   for (let cage of cages) {
@@ -233,6 +234,7 @@ const Grid = ({
   const [rippleCells, setRippleCells] = useState<Set<number>>(new Set())
 
   const renderLoopStarted = useRef(0)
+  const rippleCycleDuration = useRef(0)
   const rendering = useRef(false)
 
   const game: GameState = useGame()
@@ -503,12 +505,14 @@ const Grid = ({
   const triggerSelectionRipple = useCallback(() => {
     let origin = [...game.selection].pop()
     if (origin === undefined) {
+      rippleCycleDuration.current = 0
       setRippleRedConflicts(new Set())
       setRippleCells(new Set())
       return
     }
     let digit = game.digits.get(origin)?.digit
     if (digit === undefined) {
+      rippleCycleDuration.current = 0
       setRippleRedConflicts(new Set())
       setRippleCells(new Set())
       return
@@ -557,11 +561,12 @@ const Grid = ({
         ),
       )
     }
+    rippleCycleDuration.current = maxDistance * 280 + 1450
     timeouts.push(
       window.setTimeout(() => {
         setRippleCells(new Set())
         setRippleRedConflicts(new Set())
-      }, maxDistance * 280 + 1450),
+      }, rippleCycleDuration.current),
     )
     return () => {
       timeouts.forEach(timeout => window.clearTimeout(timeout))
@@ -1564,14 +1569,24 @@ const Grid = ({
   ])
 
   useEffect(() => {
-    let cleanup = triggerSelectionRipple()
-    let interval = window.setInterval(() => {
+    let cleanup: (() => void) | undefined
+    let loop: number | undefined
+
+    function runRippleLoop() {
       cleanup?.()
       cleanup = triggerSelectionRipple()
-    }, 3400)
+      loop = window.setTimeout(
+        runRippleLoop,
+        rippleCycleDuration.current + RIPPLE_LOOP_PAUSE_MS,
+      )
+    }
+
+    runRippleLoop()
     return () => {
       cleanup?.()
-      window.clearInterval(interval)
+      if (loop !== undefined) {
+        window.clearTimeout(loop)
+      }
     }
   }, [triggerSelectionRipple])
 
