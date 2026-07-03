@@ -42,11 +42,18 @@ const ModeButton = ({ children }: { children: React.ReactNode }) => (
 
 const Pad = () => {
   const ref = useRef<HTMLDivElement>(null)
-  const { colourPalette, customColours, noobMode, setNoobMode } = useSettings(
+  const {
+    colourPalette,
+    customColours,
+    noobMode,
+    pulsingAnimation,
+    setNoobMode,
+  } = useSettings(
     useShallow(state => ({
       colourPalette: state.colourPalette,
       customColours: state.customColours,
       noobMode: state.noobMode,
+      pulsingAnimation: state.pulsingAnimation,
       setNoobMode: state.setNoobMode,
     })),
   )
@@ -435,7 +442,11 @@ const Pad = () => {
           {digitButtons[11]}
         </>
       )}
-      <Button noPadding onClick={onCheck} pulsating={!solved && checkReady}>
+      <Button
+        noPadding
+        onClick={onCheck}
+        pulsating={pulsingAnimation && !solved && checkReady}
+      >
         <Check size="1.05rem" />
       </Button>
     </div>

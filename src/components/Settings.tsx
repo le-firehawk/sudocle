@@ -25,6 +25,7 @@ const Settings = () => {
     fontSizeFactorCentreMarks,
     penWidth,
     penOpacity,
+    pulsingAnimation,
     setColourPalette,
     setTheme,
     setCustomColours: setSettingsCustomColours,
@@ -34,6 +35,7 @@ const Settings = () => {
     setFontSizeFactorCentreMarks,
     setPenWidth,
     setPenOpacity,
+    setPulsingAnimation,
   } = useSettings(
     useShallow(state => ({
       colourPalette: state.colourPalette,
@@ -44,6 +46,7 @@ const Settings = () => {
       fontSizeFactorCentreMarks: state.fontSizeFactorCentreMarks,
       penWidth: state.penWidth,
       penOpacity: state.penOpacity,
+      pulsingAnimation: state.pulsingAnimation,
       setColourPalette: state.setColourPalette,
       setTheme: state.setTheme,
       setCustomColours: state.setCustomColours,
@@ -53,6 +56,7 @@ const Settings = () => {
       setFontSizeFactorCentreMarks: state.setFontSizeFactorCentreMarks,
       setPenWidth: state.setPenWidth,
       setPenOpacity: state.setPenOpacity,
+      setPulsingAnimation: state.setPulsingAnimation,
     })),
   )
 
@@ -257,6 +261,16 @@ const Settings = () => {
           valueToDescription={fontSizeValueToDescription}
         />
       </div>
+
+      <h3>Animation</h3>
+      <label className="mb-5 flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={pulsingAnimation}
+          onChange={e => setPulsingAnimation(e.currentTarget.checked)}
+        />
+        Pulse the check button when the puzzle is ready to check
+      </label>
 
       <h3>Pen</h3>
       <div className="mb-1.5 max-w-28">
