@@ -15,6 +15,7 @@ interface Settings {
   penWidth: number
   penOpacity: number
   safetyMode: boolean
+  noobMode: boolean
   seedDifficulty: SeedDifficulty
 
   setColourPalette(colourPalette: string): void
@@ -28,6 +29,7 @@ interface Settings {
   setPenWidth(penWidth: number): void
   setPenOpacity(penOpacity: number): void
   setSafetyMode(safetyMode: boolean): void
+  setNoobMode(noobMode: boolean): void
   setSeedDifficulty(seedDifficulty: SeedDifficulty): void
 }
 
@@ -45,6 +47,7 @@ export const useSettings = create<Settings>()(
       penWidth: 2,
       penOpacity: 1,
       safetyMode: false,
+      noobMode: false,
       seedDifficulty: "hard",
 
       setColourPalette: (colourPalette: string) => {
@@ -101,6 +104,11 @@ export const useSettings = create<Settings>()(
       setSafetyMode: (safetyMode: boolean) =>
         set(draft => {
           draft.safetyMode = safetyMode
+        }),
+
+      setNoobMode: (noobMode: boolean) =>
+        set(draft => {
+          draft.noobMode = noobMode
         }),
 
       setSeedDifficulty: (seedDifficulty: SeedDifficulty) =>
