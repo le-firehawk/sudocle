@@ -13,6 +13,8 @@ import {
   Texture,
 } from "pixi.js"
 
+const PEN_LINE_VISIBILITY_SCALE = 1.5
+
 export enum PenLineType {
   CenterRight = 0,
   CenterRightUp = 1,
@@ -146,10 +148,12 @@ class PenLineElement implements GridElement {
           t === PenLineType.CenterRightDown ||
           t === PenLineType.EdgeRightDown)
       ) {
-        penWidth = options.penWidth * SCALE_FACTOR * 1.1
+        penWidth = options.penWidth * 1.1
       } else {
-        penWidth = options.penWidth * SCALE_FACTOR
+        penWidth = options.penWidth
       }
+      penWidth = Math.min(penWidth * PEN_LINE_VISIBILITY_SCALE, PEN_MAX_WIDTH)
+      penWidth *= SCALE_FACTOR
 
       this.drawLine(x, y, t, options.cellSize)
 
