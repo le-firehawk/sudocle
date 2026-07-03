@@ -534,13 +534,13 @@ const Grid = ({
       timeouts.push(
         window.setTimeout(() => {
           setRippleCells(previous => new Set([...previous, ...cells]))
-        }, distance * 70),
+        }, distance * 140),
       )
     }
     timeouts.push(
       window.setTimeout(
         () => setRippleRedConflicts(new Set(conflicts)),
-        maxDistance * 70,
+        maxDistance * 140,
       ),
     )
     for (let distance = maxDistance; distance >= 1; --distance) {
@@ -553,7 +553,7 @@ const Grid = ({
               cells.forEach(cell => next.delete(cell))
               return next
             }),
-          maxDistance * 70 + 260 + (maxDistance - distance) * 70,
+          maxDistance * 140 + 700 + (maxDistance - distance) * 140,
         ),
       )
     }
@@ -561,7 +561,7 @@ const Grid = ({
       window.setTimeout(() => {
         setRippleCells(new Set())
         setRippleRedConflicts(new Set())
-      }, maxDistance * 140 + 620),
+      }, maxDistance * 280 + 1450),
     )
     return () => {
       timeouts.forEach(timeout => window.clearTimeout(timeout))
@@ -1208,9 +1208,14 @@ const Grid = ({
             : cellColour === undefined
               ? undefined
               : paletteColours[cellColour.colour - 1]
+          let useDarkTextOnHighlight =
+            highlightColour !== undefined &&
+            isLightColour(highlightColour) &&
+            theme !== "dark" &&
+            theme !== "sudocle-dark"
           e.fill = rippleRedConflicts.has(e.k)
             ? 0xd12c2c
-            : highlightColour !== undefined && isLightColour(highlightColour)
+            : useDarkTextOnHighlight
               ? DARK_TEXT_ON_LIGHT_HIGHLIGHT
               : fill
           e.visible = true
@@ -1563,7 +1568,7 @@ const Grid = ({
     let interval = window.setInterval(() => {
       cleanup?.()
       cleanup = triggerSelectionRipple()
-    }, 1700)
+    }, 3400)
     return () => {
       cleanup?.()
       window.clearInterval(interval)
