@@ -127,7 +127,7 @@ const Sidebar = () => {
   return (
     <div
       className={clsx(
-        "fixed top-0 right-0 bottom-0 w-[620px] max-w-full flex z-30000 sidebar-shell",
+        "pointer-events-none fixed top-0 right-0 bottom-0 w-[620px] max-w-full flex z-30000 sidebar-shell",
         visible
           ? "translate-x-0 duration-300 ease-in-out transition-transform sidebar-visible"
           : "md:translate-x-[calc(100%-2.5rem)] duration-200 ease-in",
@@ -138,7 +138,7 @@ const Sidebar = () => {
     >
       <div
         className={clsx(
-          "w-8 hidden md:block",
+          "pointer-events-auto w-8 hidden md:block",
           mode !== MODE_NORMAL
             ? "mt-[calc(var(--status-bar-height)+2.75rem)]"
             : "mt-[calc(var(--status-bar-height)+0.75rem)]",
@@ -195,7 +195,7 @@ const Sidebar = () => {
       </div>
       <div
         className={clsx(
-          "bg-bg/75 shadow-[-2px_0_5px_0_rgba(0_0_0/20%)] pr-8 pb-8 pl-8 flex-1 opacity-0 transition-opacity duration-150 ease-[cubic-bezier(1,0,1,0)] overflow-y-auto backdrop-blur-xs",
+          "pointer-events-auto bg-bg/75 shadow-[-2px_0_5px_0_rgba(0_0_0/20%)] pr-8 pb-8 pl-8 flex-1 opacity-0 transition-opacity duration-150 ease-[cubic-bezier(1,0,1,0)] overflow-y-auto backdrop-blur-xs",
           mode !== MODE_NORMAL
             ? "pt-[calc(var(--status-bar-height)+2.75rem)]"
             : "pt-[calc(var(--status-bar-height)+1rem)]",
@@ -212,7 +212,7 @@ const Sidebar = () => {
       </div>
       <div
         className={clsx(
-          "absolute right-8 cursor-pointer hover:text-primary transition-opacity duration-300",
+          "pointer-events-auto absolute right-8 cursor-pointer hover:text-primary transition-opacity duration-300",
           mode !== MODE_NORMAL
             ? "top-[calc(var(--status-bar-height)+3rem)]"
             : "top-[calc(var(--status-bar-height)+1.25rem)]",
