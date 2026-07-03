@@ -29,7 +29,7 @@ import {
   ArrowLeftToLine,
   Check,
   Delete,
-  Ellipsis,
+  PenTool,
   Redo,
   Undo,
 } from "lucide-react"
@@ -377,11 +377,18 @@ const Pad = () => {
       {mode !== MODE_COLOUR && (
         <>
           <div className="flex col-span-2">{digitButtons[9]}</div>
-          <Button noPadding onClick={() => onRotateModeGroup()}>
+          <Button
+            noPadding
+            onClick={() => onRotateModeGroup()}
+            active={mode === MODE_PEN}
+          >
             {mode === MODE_PEN ? (
               <ArrowLeftToLine size="0.95rem" />
             ) : (
-              <Ellipsis size="0.95rem" />
+              <div className="flex items-center gap-1 text-[0.5rem] font-condensed">
+                <PenTool size="0.75rem" />
+                <span>Pen</span>
+              </div>
             )}
           </Button>
         </>

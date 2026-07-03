@@ -504,19 +504,20 @@ const Grid = ({
     let origin = [...game.selection].pop()
     if (origin === undefined) {
       setRippleRedConflicts(new Set())
+      setRippleCells(new Set())
       return
     }
     let digit = game.digits.get(origin)?.digit
     if (digit === undefined) {
       setRippleRedConflicts(new Set())
+      setRippleCells(new Set())
       return
     }
     let originK = origin
-    let conflicts = [...peerCells(originK)].filter(
-      k => game.digits.get(k)?.digit === digit,
-    )
+    let peers = [...peerCells(originK)]
+    let conflicts = peers.filter(k => game.digits.get(k)?.digit === digit)
     let [ox, oy] = ktoxy(originK)
-    let waves = [...peerCells(originK)].reduce((acc, k) => {
+    let waves = peers.reduce((acc, k) => {
       let [x, y] = ktoxy(k)
       let distance = Math.max(Math.abs(x - ox), Math.abs(y - oy))
       if (!acc.has(distance)) {
@@ -525,6 +526,7 @@ const Grid = ({
       acc.get(distance)!.push(k)
       return acc
     }, new Map<number, number[]>())
+    let maxDistance = Math.max(1, ...waves.keys())
     setRippleRedConflicts(new Set())
     setRippleCells(new Set([origin]))
     let timeouts: number[] = []
@@ -538,14 +540,28 @@ const Grid = ({
     timeouts.push(
       window.setTimeout(
         () => setRippleRedConflicts(new Set(conflicts)),
-        Math.max(1, ...waves.keys()) * 70,
+        maxDistance * 70,
       ),
     )
+    for (let distance = maxDistance; distance >= 1; --distance) {
+      let cells = waves.get(distance) ?? []
+      timeouts.push(
+        window.setTimeout(
+          () =>
+            setRippleCells(previous => {
+              let next = new Set(previous)
+              cells.forEach(cell => next.delete(cell))
+              return next
+            }),
+          maxDistance * 70 + 260 + (maxDistance - distance) * 70,
+        ),
+      )
+    }
     timeouts.push(
       window.setTimeout(() => {
         setRippleCells(new Set())
         setRippleRedConflicts(new Set())
-      }, Math.max(1, ...waves.keys()) * 70 + 420),
+      }, maxDistance * 140 + 620),
     )
     return () => {
       timeouts.forEach(timeout => window.clearTimeout(timeout))
@@ -1542,7 +1558,17 @@ const Grid = ({
     renderNow,
   ])
 
-  useEffect(() => triggerSelectionRipple(), [triggerSelectionRipple])
+  useEffect(() => {
+    let cleanup = triggerSelectionRipple()
+    let interval = window.setInterval(() => {
+      cleanup?.()
+      cleanup = triggerSelectionRipple()
+    }, 1700)
+    return () => {
+      cleanup?.()
+      window.clearInterval(interval)
+    }
+  }, [triggerSelectionRipple])
 
   useEffect(() => {
     if (app === undefined) {

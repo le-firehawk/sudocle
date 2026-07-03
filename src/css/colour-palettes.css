@@ -135,3 +135,29 @@
   --pen-color-7-pos: 8;
   --pen-color-5-pos: 9;
 }
+
+/* prettier-ignore */
+:where(.dark, .dark *)[data-colour-palette="default"] {
+  --color-1: #0f172a;  /* ink */
+  --color-2: #64748b;  /* slate */
+  --color-3: #e2e8f0;  /* frost */
+  --color-4: #22c55e;  /* emerald */
+  --color-5: #c084fc;  /* amethyst */
+  --color-6: #fb923c;  /* amber */
+  --color-7: #fb7185;  /* rose */
+  --color-8: #facc15;  /* gold */
+  --color-9: #38bdf8;  /* sky */
+  --color-10: #334155; /* graphite */
+  --color-11: #f59e0b; /* copper */
+  --color-12: #2dd4bf; /* teal */
+
+  --pen-color-1: #020617;
+  --pen-color-4: #16a34a;
+  --pen-color-5: #a855f7;
+  --pen-color-6: #ea580c;
+  --pen-color-7: #e11d48;
+  --pen-color-8: #eab308;
+  --pen-color-9: #0284c7;
+  --pen-color-11: #d97706;
+  --pen-color-12: #0d9488;
+}

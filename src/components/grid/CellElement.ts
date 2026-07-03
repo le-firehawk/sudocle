@@ -53,12 +53,13 @@ class CellElement implements GridElement {
   }
 
   draw(options: { cellSize: number; themeColours: ThemeColours }) {
-    this.graphics.rect(0, 0, options.cellSize, options.cellSize)
+    this.graphics.rect(0.5, 0.5, options.cellSize - 1, options.cellSize - 1)
     this.graphics.stroke({
       // Even if `this.hideBorder` is true, we need to draw something.
-      // Otherwise, the bounding rectangle cannot be calculated correctly
-      width: this.hideBorder ? 0 : 1,
+      // Otherwise, the bounding rectangle cannot be calculated correctly.
+      width: this.hideBorder ? 0 : 0.8,
       color: options.themeColours.foregroundColor,
+      alpha: this.hideBorder ? 0 : 0.34,
     })
 
     this.graphics.x = this.x * options.cellSize
