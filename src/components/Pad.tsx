@@ -8,6 +8,7 @@ import {
   TYPE_COLOURS,
   TYPE_DIGITS,
   TYPE_MODE,
+  TYPE_PENCOLOUR,
   TYPE_REDO,
   TYPE_UNDO,
 } from "./lib/Actions"
@@ -23,7 +24,7 @@ import {
 import { ktoxy } from "./lib/utils"
 import clsx from "clsx"
 import Color from "color"
-import { Check, Delete, PenTool, Redo, Undo } from "lucide-react"
+import { Check, Delete, Redo, Undo } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { useShallow } from "zustand/react/shallow"
 
@@ -48,17 +49,19 @@ const Pad = () => {
       safetyMode: state.safetyMode,
     })),
   )
-  const { data, digits, mode, selection, solved } = useGame(
+  const { data, digits, mode, penColour, selection, solved } = useGame(
     useShallow(state => ({
       data: state.data,
       digits: state.digits,
       mode: state.mode,
+      penColour: state.penColour,
       selection: state.selection,
       solved: state.solved,
     })),
   )
   const updateGame = useGame(state => state.updateGame)
   const [colours, setColours] = useState<Colour[]>([])
+  const [penColours, setPenColours] = useState<Colour[]>([])
   const [checkReady, setCheckReady] = useState(false)
   const hasSelectedDigits = [...selection].some(k => digits.has(k))
 
@@ -66,6 +69,7 @@ const Pad = () => {
     let computedStyle = getComputedStyle(ref.current!)
     let nColours = +computedStyle.getPropertyValue("--colors")
     let newColours: Colour[] = []
+    let newPenColours: Colour[] = []
     if (colourPalette !== "custom" || customColours.length === 0) {
       for (let i = 0; i < nColours; ++i) {
         let col = computedStyle.getPropertyValue(`--color-${i + 1}`)
@@ -75,18 +79,32 @@ const Pad = () => {
           digit: i + 1,
           light: Color(col.trim()).luminosity() > 0.9,
         }
+
+        let penCol = computedStyle.getPropertyValue(`--pen-color-${i + 1}`)
+        if (penCol === "") {
+          continue
+        }
+        let penPos = +computedStyle.getPropertyValue(`--pen-color-${i + 1}-pos`)
+        newPenColours[penPos - 1] = {
+          colour: penCol,
+          digit: i + 1,
+          light: Color(penCol.trim()).luminosity() > 0.9,
+        }
       }
     } else {
       for (let i = 0; i < customColours.length; ++i) {
         let col = customColours[i]
-        newColours[i] = {
+        let colour = {
           colour: col,
           digit: i + 1,
           light: Color(col.trim()).luminosity() > 0.9,
         }
+        newColours[i] = colour
+        newPenColours[i] = colour
       }
     }
     setColours(newColours)
+    setPenColours(newPenColours)
   }, [colourPalette, customColours])
 
   useEffect(() => {
@@ -110,6 +128,14 @@ const Pad = () => {
   function onColour(digit: number) {
     updateGame({
       type: TYPE_COLOURS,
+      action: ACTION_SET,
+      digit,
+    })
+  }
+
+  function onPenColour(digit: number) {
+    updateGame({
+      type: TYPE_PENCOLOUR,
       action: ACTION_SET,
       digit,
     })
@@ -183,11 +209,7 @@ const Pad = () => {
         let sameRegion = selectedRegions.some(region =>
           region.some(([row, col]) => row === digitY && col === digitX),
         )
-        if (
-          digitX === selectedX ||
-          digitY === selectedY ||
-          sameRegion
-        ) {
+        if (digitX === selectedX || digitY === selectedY || sameRegion) {
           conflictingDigits.add(digit)
         }
       })
@@ -209,8 +231,7 @@ const Pad = () => {
             ? undefined
             : Math.max(0, 9 - (digitCounts.get(digit) ?? 0))
         let hasConflict = mode === MODE_NORMAL && conflictingDigits.has(digit)
-        let disabled =
-          mode === MODE_NORMAL && (missing === 0 || hasConflict)
+        let disabled = mode === MODE_NORMAL && (missing === 0 || hasConflict)
         digitButtons.push(
           <Button
             key={i}
@@ -280,8 +301,29 @@ const Pad = () => {
         digitButtons.push(<div></div>)
       }
     } else if (mode === MODE_PEN) {
+      for (let c of penColours) {
+        if (c === undefined) {
+          continue
+        }
+        digitButtons.push(
+          <Button
+            key={c.digit}
+            active={c.digit === penColour}
+            noPadding
+            onClick={() => onPenColour(c.digit)}
+          >
+            <div
+              className={clsx("flex flex-1 h-full rounded", {
+                "border border-grey-500": c.light,
+                "ring-2 ring-primary ring-inset": c.digit === penColour,
+              })}
+              style={{ backgroundColor: c.colour }}
+            ></div>
+          </Button>,
+        )
+      }
       while (digitButtons.length < 12) {
-        digitButtons.push(<Placeholder />)
+        digitButtons.push(<div></div>)
       }
     }
   } else {
@@ -369,10 +411,7 @@ const Pad = () => {
             onClick={() => onMode(mode === MODE_PEN ? MODE_NORMAL : MODE_PEN)}
             active={mode === MODE_PEN}
           >
-            <div className="flex items-center gap-1 text-[0.5rem] font-condensed">
-              <PenTool size="0.75rem" />
-              <span>Pen</span>
-            </div>
+            <ModeButton>Pen</ModeButton>
           </Button>
         </>
       )}
