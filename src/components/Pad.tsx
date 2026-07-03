@@ -23,6 +23,7 @@ import {
   Mode,
   getModeGroup,
 } from "./lib/Modes"
+import { ktoxy } from "./lib/utils"
 import clsx from "clsx"
 import Color from "color"
 import {
@@ -50,10 +51,11 @@ const ModeButton = ({ children }: { children: React.ReactNode }) => (
 
 const Pad = () => {
   const ref = useRef<HTMLDivElement>(null)
-  const { colourPalette, customColours } = useSettings(
+  const { colourPalette, customColours, safetyMode } = useSettings(
     useShallow(state => ({
       colourPalette: state.colourPalette,
       customColours: state.customColours,
+      safetyMode: state.safetyMode,
     })),
   )
   const { data, digits, mode, penColour, selection, solved } = useGame(
@@ -198,6 +200,48 @@ const Pad = () => {
     }
   })
 
+  function getConflictingDigits() {
+    let conflictingDigits = new Set<number>()
+    if (!safetyMode || mode !== MODE_NORMAL || selection.size === 0) {
+      return conflictingDigits
+    }
+
+    let selectedCells = [...selection]
+    let selectedCellSet = new Set(selectedCells)
+    for (let selectedCell of selectedCells) {
+      let [selectedX, selectedY] = ktoxy(selectedCell)
+      let selectedRegions = data.regions.filter(region =>
+        region.some(([row, col]) => row === selectedY && col === selectedX),
+      )
+
+      digits.forEach(({ digit }, digitCell) => {
+        if (
+          selectedCellSet.has(digitCell) ||
+          typeof digit !== "number" ||
+          digit < 1 ||
+          digit > 9
+        ) {
+          return
+        }
+
+        let [digitX, digitY] = ktoxy(digitCell)
+        let sameRegion = selectedRegions.some(region =>
+          region.some(([row, col]) => row === digitY && col === digitX),
+        )
+        if (
+          digitX === selectedX ||
+          digitY === selectedY ||
+          sameRegion
+        ) {
+          conflictingDigits.add(digit)
+        }
+      })
+    }
+
+    return conflictingDigits
+  }
+
+  const conflictingDigits = getConflictingDigits()
   const digitButtons = []
 
   let modeGroup = getModeGroup(mode)
@@ -209,7 +253,9 @@ const Pad = () => {
           digit === 0
             ? undefined
             : Math.max(0, 9 - (digitCounts.get(digit) ?? 0))
-        let disabled = mode === MODE_NORMAL && missing === 0
+        let hasConflict = mode === MODE_NORMAL && conflictingDigits.has(digit)
+        let disabled =
+          mode === MODE_NORMAL && (missing === 0 || hasConflict)
         digitButtons.push(
           <Button
             key={i}
@@ -237,7 +283,13 @@ const Pad = () => {
                 },
               )}
             >
-              <div>{digit}</div>
+              <div
+                className={clsx({
+                  "line-through decoration-2 decoration-red-500": hasConflict,
+                })}
+              >
+                {digit}
+              </div>
               {missing !== undefined && mode === MODE_NORMAL && (
                 <div
                   className={clsx(
