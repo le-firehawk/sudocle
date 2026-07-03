@@ -113,6 +113,7 @@ export interface UnpauseAction {
 
 export interface HintAction {
   readonly type: typeof TYPE_HINT
+  readonly k?: number
 }
 
 export type Action =

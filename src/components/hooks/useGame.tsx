@@ -44,11 +44,11 @@ import {
   getModeGroup,
 } from "../lib/Modes"
 import parseSolution from "../lib/parsesolution"
-import { hasFog, ktoxy, xytok } from "../lib/utils"
+import { hasFog, ktoxy, unionCells, xytok } from "../lib/utils"
 import { Data, DataCell, FogLight } from "../types/Data"
 import { Digit } from "../types/Game"
 import { useSettings } from "./useSettings"
-import { isEqual, isMap, isPlainObject, isSet, isString } from "lodash"
+import { flatten, isEqual, isMap, isPlainObject, isSet, isString } from "lodash"
 import { create } from "zustand"
 import { immer } from "zustand/middleware/immer"
 
@@ -114,6 +114,7 @@ export interface GameState extends PersistentGameState {
   checkCounter: number
   incorrectInputs: Set<number>
   hintsUsed: number
+  hintCellPicker: boolean
   mistakes: number
   startedAt: number
   completedAt?: number
@@ -364,6 +365,7 @@ function makeEmptyState(puzzleId?: string, data?: Data): GameState {
     checkCounter: 0,
     incorrectInputs: new Set(),
     hintsUsed: 0,
+    hintCellPicker: false,
     mistakes: 0,
     startedAt: +new Date(),
     completedAt: undefined,
@@ -853,6 +855,38 @@ function checkReducer(
   return { type: "badsofar" }
 }
 
+function getPeerCells(data: Data, origin: number): Set<number> {
+  let [ox, oy] = ktoxy(origin)
+  let peers = new Set<number>()
+  data.cells[oy]?.forEach((_cell, x) => peers.add(xytok(x, oy)))
+  data.cells.forEach((row, y) => {
+    if (row[ox] !== undefined) {
+      peers.add(xytok(ox, y))
+    }
+  })
+  for (let region of data.regions) {
+    let cells = flatten(unionCells(region))
+    if (cells.some(cell => xytok(cell[1], cell[0]) === origin)) {
+      cells.forEach(cell => peers.add(xytok(cell[1], cell[0])))
+    }
+  }
+  peers.delete(origin)
+  return peers
+}
+
+function removeConflictingNotes(state: GameState, origin: number, digit: number) {
+  for (let peer of getPeerCells(state.data, origin)) {
+    state.cornerMarks.get(peer)?.delete(digit)
+    if (state.cornerMarks.get(peer)?.size === 0) {
+      state.cornerMarks.delete(peer)
+    }
+    state.centreMarks.get(peer)?.delete(digit)
+    if (state.centreMarks.get(peer)?.size === 0) {
+      state.centreMarks.delete(peer)
+    }
+  }
+}
+
 function gameReducerNoUndo(state: GameState, mode: string, action: Action) {
   switch (action.type) {
     case TYPE_MODE:
@@ -1286,7 +1320,13 @@ export const useGame = create<GameStateWithActions>()(
             return
           }
           let candidates: number[] = []
-          for (let y = 0; y < draft.data.solution.length; y++) {
+          if (action.k !== undefined) {
+            let [x, y] = ktoxy(action.k)
+            if (draft.data.solution[y]?.[x] !== undefined) {
+              candidates.push(action.k)
+            }
+          }
+          for (let y = 0; y < draft.data.solution.length && action.k === undefined; y++) {
             for (let x = 0; x < draft.data.solution[y].length; x++) {
               let k = xytok(x, y)
               let current = draft.digits.get(k)
@@ -1309,6 +1349,7 @@ export const useGame = create<GameStateWithActions>()(
             discovered: false,
           })
           draft.hintsUsed++
+          draft.hintCellPicker = false
           handledHint = true
         }
 
@@ -1389,6 +1430,7 @@ export const useGame = create<GameStateWithActions>()(
               draft.incorrectInputs.add(sc)
             } else {
               draft.incorrectInputs.delete(sc)
+              removeConflictingNotes(draft, sc, possibleDigitAction.digit)
             }
           }
         }

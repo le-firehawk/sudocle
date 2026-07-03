@@ -4,6 +4,7 @@ import {
   ACTION_REMOVE,
   ACTION_SET,
   SelectionAction,
+  TYPE_HINT,
   TYPE_SELECTION,
 } from "../lib/Actions"
 import { MODE_PEN } from "../lib/Modes"
@@ -52,12 +53,13 @@ class CellElement implements GridElement {
   }
 
   draw(options: { cellSize: number; themeColours: ThemeColours }) {
-    this.graphics.rect(0, 0, options.cellSize, options.cellSize)
+    this.graphics.rect(0.5, 0.5, options.cellSize - 1, options.cellSize - 1)
     this.graphics.stroke({
       // Even if `this.hideBorder` is true, we need to draw something.
-      // Otherwise, the bounding rectangle cannot be calculated correctly
-      width: this.hideBorder ? 0 : 1,
+      // Otherwise, the bounding rectangle cannot be calculated correctly.
+      width: this.hideBorder ? 0 : 0.8,
       color: options.themeColours.foregroundColor,
+      alpha: this.hideBorder ? 0 : 0.34,
     })
 
     this.graphics.x = this.x * options.cellSize
@@ -78,7 +80,13 @@ class CellElement implements GridElement {
     evt: FederatedPointerEvent | TouchEvent,
     append = false,
   ) {
-    if (useGame.getState().mode === MODE_PEN) {
+    let game = useGame.getState()
+    if (game.hintCellPicker) {
+      game.updateGame({ type: TYPE_HINT, k })
+      return
+    }
+
+    if (game.mode === MODE_PEN) {
       // do nothing in pen mode
       return
     }
@@ -98,7 +106,7 @@ class CellElement implements GridElement {
       }
     }
 
-    useGame.getState().updateGame({
+    game.updateGame({
       type: TYPE_SELECTION,
       action,
       k,

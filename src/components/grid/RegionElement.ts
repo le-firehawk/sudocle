@@ -27,8 +27,11 @@ class RegionElement implements GridElement {
     }
     this.graphics.closePath()
     this.graphics.stroke({
-      width: 3,
+      width: 3.25,
       color: options.themeColours.foregroundColor,
+      alpha: 0.86,
+      join: "round",
+      cap: "round",
     })
   }
 }
