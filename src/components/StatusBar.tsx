@@ -14,7 +14,7 @@ import { MODE_NORMAL } from "./lib/Modes"
 import { ID_ABOUT, ID_HELP, ID_RULES, ID_SETTINGS } from "./lib/SidebarTabs"
 import clsx from "clsx"
 import { BookOpen, HelpCircle, Info, Sliders } from "lucide-react"
-import { useEffect, useState } from "react"
+import { MouseEvent, useEffect, useState } from "react"
 import { useShallow } from "zustand/react/shallow"
 
 const HINT_COOLDOWN_SECONDS: Record<SeedDifficulty, number> = {
@@ -88,6 +88,13 @@ const StatusBar = () => {
     )
   }
 
+  function onHintContext(e: MouseEvent<HTMLButtonElement>) {
+    e.preventDefault()
+    if (!hintsDisabled && hasSolution && now >= hintCooldownUntil) {
+      useGame.setState({ hintCellPicker: true })
+    }
+  }
+
   function goHome() {
     window.location.href = `${process.env.__NEXT_ROUTER_BASEPATH}/`
   }
@@ -145,10 +152,11 @@ const StatusBar = () => {
           disabled={hintsDisabled || !hasSolution || now < hintCooldownUntil}
           className="ml-3 h-5 min-w-14 rounded-full border border-fg-500/50 bg-bg px-2 text-[0.55rem] leading-none hover:bg-button-hover disabled:cursor-not-allowed disabled:opacity-50"
           onClick={onHint}
+          onContextMenu={onHintContext}
           title={
             hintsDisabled
               ? "Hints are disabled for expert and hellish puzzles."
-              : "Fill one unsolved cell with the correct digit."
+              : "Fill one unsolved cell with the correct digit. Right-click to choose the cell."
           }
         >
           {now < hintCooldownUntil

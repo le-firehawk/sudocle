@@ -4,6 +4,7 @@ import {
   ACTION_REMOVE,
   ACTION_SET,
   SelectionAction,
+  TYPE_HINT,
   TYPE_SELECTION,
 } from "../lib/Actions"
 import { MODE_PEN } from "../lib/Modes"
@@ -78,7 +79,13 @@ class CellElement implements GridElement {
     evt: FederatedPointerEvent | TouchEvent,
     append = false,
   ) {
-    if (useGame.getState().mode === MODE_PEN) {
+    let game = useGame.getState()
+    if (game.hintCellPicker) {
+      game.updateGame({ type: TYPE_HINT, k })
+      return
+    }
+
+    if (game.mode === MODE_PEN) {
       // do nothing in pen mode
       return
     }
@@ -98,7 +105,7 @@ class CellElement implements GridElement {
       }
     }
 
-    useGame.getState().updateGame({
+    game.updateGame({
       type: TYPE_SELECTION,
       action,
       k,

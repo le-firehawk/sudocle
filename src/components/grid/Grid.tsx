@@ -14,7 +14,7 @@ import {
 } from "../lib/Actions"
 import { MODE_PEN } from "../lib/Modes"
 import { getRGBColor } from "../lib/colorutils"
-import { hasFog, ktoxy, unionCells } from "../lib/utils"
+import { hasFog, ktoxy, unionCells, xytok } from "../lib/utils"
 import { Arrow, DataCell, Line } from "../types/Data"
 import ArrowElement from "./ArrowElement"
 import BackgroundImageElement from "./BackgroundImageElement"
@@ -52,6 +52,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
 } from "react"
 import { useShallow } from "zustand/react/shallow"
 
@@ -228,6 +229,8 @@ const Grid = ({
   const errorElements = useRef<ColourElement[]>([])
   const penLineElements = useRef<PenLineElement[]>([])
   const penElements = useRef<PenElement[]>([])
+  const [rippleRedConflicts, setRippleRedConflicts] = useState<Set<number>>(new Set())
+  const [rippleCells, setRippleCells] = useState<Set<number>>(new Set())
 
   const renderLoopStarted = useRef(0)
   const rendering = useRef(false)
@@ -474,6 +477,80 @@ const Grid = ({
       })
     }
   }
+
+  const peerCells = useCallback(
+    (origin: number): Set<number> => {
+      let [ox, oy] = ktoxy(origin)
+      let peers = new Set<number>()
+      game.data.cells[oy]?.forEach((_cell, x) => peers.add(xytok(x, oy)))
+      game.data.cells.forEach((row, y) => {
+        if (row[ox] !== undefined) {
+          peers.add(xytok(ox, y))
+        }
+      })
+      for (let region of game.data.regions) {
+        let cells = flatten(unionCells(region))
+        if (cells.some(cell => xytok(cell[1], cell[0]) === origin)) {
+          cells.forEach(cell => peers.add(xytok(cell[1], cell[0])))
+        }
+      }
+      peers.delete(origin)
+      return peers
+    },
+    [game.data.cells, game.data.regions],
+  )
+
+  const triggerSelectionRipple = useCallback(() => {
+    let origin = [...game.selection].pop()
+    if (origin === undefined) {
+      setRippleRedConflicts(new Set())
+      return
+    }
+    let digit = game.digits.get(origin)?.digit
+    if (digit === undefined) {
+      setRippleRedConflicts(new Set())
+      return
+    }
+    let originK = origin
+    let conflicts = [...peerCells(originK)].filter(
+      k => game.digits.get(k)?.digit === digit,
+    )
+    let [ox, oy] = ktoxy(originK)
+    let waves = [...peerCells(originK)].reduce((acc, k) => {
+      let [x, y] = ktoxy(k)
+      let distance = Math.max(Math.abs(x - ox), Math.abs(y - oy))
+      if (!acc.has(distance)) {
+        acc.set(distance, [])
+      }
+      acc.get(distance)!.push(k)
+      return acc
+    }, new Map<number, number[]>())
+    setRippleRedConflicts(new Set())
+    setRippleCells(new Set([origin]))
+    let timeouts: number[] = []
+    for (let [distance, cells] of waves) {
+      timeouts.push(
+        window.setTimeout(() => {
+          setRippleCells(previous => new Set([...previous, ...cells]))
+        }, distance * 70),
+      )
+    }
+    timeouts.push(
+      window.setTimeout(
+        () => setRippleRedConflicts(new Set(conflicts)),
+        Math.max(1, ...waves.keys()) * 70,
+      ),
+    )
+    timeouts.push(
+      window.setTimeout(() => {
+        setRippleCells(new Set())
+        setRippleRedConflicts(new Set())
+      }, Math.max(1, ...waves.keys()) * 70 + 420),
+    )
+    return () => {
+      timeouts.forEach(timeout => window.clearTimeout(timeout))
+    }
+  }, [game.digits, game.selection, peerCells])
 
   const onPointerUp = useCallback(() => {
     let result = penElements.current[0].onPointerUp()
@@ -1115,8 +1192,9 @@ const Grid = ({
             : cellColour === undefined
               ? undefined
               : paletteColours[cellColour.colour - 1]
-          e.fill =
-            highlightColour !== undefined && isLightColour(highlightColour)
+          e.fill = rippleRedConflicts.has(e.k)
+            ? 0xd12c2c
+            : highlightColour !== undefined && isLightColour(highlightColour)
               ? DARK_TEXT_ON_LIGHT_HIGHLIGHT
               : fill
           e.visible = true
@@ -1167,6 +1245,7 @@ const Grid = ({
     game.fogRaster,
     game.penLines,
     game.selection,
+    rippleRedConflicts,
     theme,
   ])
 
@@ -1439,12 +1518,31 @@ const Grid = ({
 
     selectionElements.current.forEach(s => {
       let digit = game.digits.get(s.k)?.digit
+      let cornerMarks = game.cornerMarks.get(s.k)
+      let centreMarks = game.centreMarks.get(s.k)
+      let hasSelectedNote = [...selectedDigits].some(
+        selectedDigit =>
+          cornerMarks?.has(selectedDigit) || centreMarks?.has(selectedDigit),
+      )
       s.visible =
+        game.hintCellPicker ||
+        rippleCells.has(s.k) ||
         game.selection.has(s.k) ||
-        (digit !== undefined && selectedDigits.has(digit))
+        (digit !== undefined && selectedDigits.has(digit)) ||
+        hasSelectedNote
     })
     renderNow()
-  }, [game.digits, game.selection, renderNow])
+  }, [
+    game.centreMarks,
+    game.cornerMarks,
+    game.digits,
+    game.hintCellPicker,
+    game.selection,
+    rippleCells,
+    renderNow,
+  ])
+
+  useEffect(() => triggerSelectionRipple(), [triggerSelectionRipple])
 
   useEffect(() => {
     if (app === undefined) {
