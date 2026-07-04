@@ -263,14 +263,18 @@ const Settings = () => {
       </div>
 
       <h3>Animation</h3>
-      <label className="mb-5 flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          checked={pulsingAnimation}
-          onChange={e => setPulsingAnimation(e.currentTarget.checked)}
-        />
-        Pulse the check button when the puzzle is ready to check
-      </label>
+      <div className="mb-5 flex items-start relative leading-4">
+        <div className="h-4 flex items-center">
+          <input
+            id="pulsing-animation"
+            type="checkbox"
+            className="cursor-default w-[1em] h-[1em] appearance-none border border-fg/50 rounded-mini mr-1 checked:border-primary checked:border-[0.2rem] transition-colors"
+            checked={pulsingAnimation}
+            onChange={e => setPulsingAnimation(e.currentTarget.checked)}
+          />
+        </div>
+        <label htmlFor="pulsing-animation">Pulse check button</label>
+      </div>
 
       <h3>Pen</h3>
       <div className="mb-1.5 max-w-28">

@@ -443,6 +443,7 @@ const Pad = () => {
         </>
       )}
       <Button
+        key={pulsingAnimation ? "pulse-enabled" : "pulse-disabled"}
         noPadding
         onClick={onCheck}
         pulsating={pulsingAnimation && !solved && checkReady}
