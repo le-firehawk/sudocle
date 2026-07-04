@@ -268,8 +268,8 @@ const Settings = () => {
           <input
             id="pulsing-animation"
             type="checkbox"
-            className="cursor-default w-[1em] h-[1em] appearance-none border border-fg/50 rounded-mini mr-1 checked:border-primary checked:border-[0.2rem] transition-colors"
-            checked={pulsingAnimation}
+            className="cursor-default w-[1em] h-[1em] appearance-none border border-fg/50 rounded-mini mr-1 checked:border-primary checked:border-[0.2rem] checked:bg-primary transition-colors"
+            checked={pulsingAnimation === true}
             onChange={e => setPulsingAnimation(e.currentTarget.checked)}
           />
         </div>

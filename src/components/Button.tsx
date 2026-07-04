@@ -1,3 +1,4 @@
+import { useSettings } from "./hooks/useSettings"
 import clsx from "clsx"
 import { MouseEvent, MouseEventHandler, ReactNode } from "react"
 
@@ -18,6 +19,9 @@ const Button = ({
   pulsating = false,
   children,
 }: ButtonProps) => {
+  const pulsingAnimation = useSettings(state => state.pulsingAnimation === true)
+  const shouldPulse = pulsingAnimation && pulsating
+
   function onClickInternal(e: MouseEvent) {
     if (!disabled && onClick !== undefined) {
       onClick(e)
@@ -37,7 +41,7 @@ const Button = ({
         noPadding ? "p-0" : "p-1",
         active
           ? "bg-button-active"
-          : pulsating
+          : shouldPulse
             ? "not-[&:hover]:animate-pulsating"
             : "bg-grey-700",
       )}
