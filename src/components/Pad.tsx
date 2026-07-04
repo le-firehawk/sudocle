@@ -50,20 +50,18 @@ const Pad = () => {
       setNoobMode: state.setNoobMode,
     })),
   )
-  const { data, digits, mode, penColour, selection, solved } = useGame(
+  const { data, digits, mode, penColour, selection } = useGame(
     useShallow(state => ({
       data: state.data,
       digits: state.digits,
       mode: state.mode,
       penColour: state.penColour,
       selection: state.selection,
-      solved: state.solved,
     })),
   )
   const updateGame = useGame(state => state.updateGame)
   const [colours, setColours] = useState<Colour[]>([])
   const [penColours, setPenColours] = useState<Colour[]>([])
-  const [checkReady, setCheckReady] = useState(false)
   const hasSelectedDigits = [...selection].some(k => digits.has(k))
 
   useEffect(() => {
@@ -107,16 +105,6 @@ const Pad = () => {
     setColours(newColours)
     setPenColours(newPenColours)
   }, [colourPalette, customColours])
-
-  useEffect(() => {
-    // check if all cells are filled
-    if (data === undefined) {
-      setCheckReady(false)
-    } else {
-      let nCells = data.cells.reduce((acc, v) => acc + v.length, 0)
-      setCheckReady(nCells === digits.size)
-    }
-  }, [data, digits])
 
   function onDigit(digit: number) {
     updateGame({
@@ -435,7 +423,7 @@ const Pad = () => {
           {digitButtons[11]}
         </>
       )}
-      <Button noPadding onClick={onCheck} pulsating={!solved && checkReady}>
+      <Button noPadding onClick={onCheck}>
         <Check size="1.05rem" />
       </Button>
     </div>

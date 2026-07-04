@@ -16,7 +16,6 @@ interface Settings {
   penOpacity: number
   safetyMode: boolean
   noobMode: boolean
-  pulsingAnimation: boolean
   seedDifficulty: SeedDifficulty
 
   setColourPalette(colourPalette: string): void
@@ -31,7 +30,6 @@ interface Settings {
   setPenOpacity(penOpacity: number): void
   setSafetyMode(safetyMode: boolean): void
   setNoobMode(noobMode: boolean): void
-  setPulsingAnimation(pulsingAnimation: boolean): void
   setSeedDifficulty(seedDifficulty: SeedDifficulty): void
 }
 
@@ -50,7 +48,6 @@ export const useSettings = create<Settings>()(
       penOpacity: 1,
       safetyMode: false,
       noobMode: false,
-      pulsingAnimation: false,
       seedDifficulty: "hard",
 
       setColourPalette: (colourPalette: string) => {
@@ -112,11 +109,6 @@ export const useSettings = create<Settings>()(
       setNoobMode: (noobMode: boolean) =>
         set(draft => {
           draft.noobMode = noobMode
-        }),
-
-      setPulsingAnimation: (pulsingAnimation: boolean) =>
-        set(draft => {
-          draft.pulsingAnimation = pulsingAnimation
         }),
 
       setSeedDifficulty: (seedDifficulty: SeedDifficulty) =>
