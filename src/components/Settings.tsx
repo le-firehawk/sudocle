@@ -25,6 +25,7 @@ const Settings = () => {
     fontSizeFactorCentreMarks,
     penWidth,
     penOpacity,
+    selectionPulse,
     setColourPalette,
     setTheme,
     setCustomColours: setSettingsCustomColours,
@@ -34,6 +35,7 @@ const Settings = () => {
     setFontSizeFactorCentreMarks,
     setPenWidth,
     setPenOpacity,
+    setSelectionPulse,
   } = useSettings(
     useShallow(state => ({
       colourPalette: state.colourPalette,
@@ -44,6 +46,7 @@ const Settings = () => {
       fontSizeFactorCentreMarks: state.fontSizeFactorCentreMarks,
       penWidth: state.penWidth,
       penOpacity: state.penOpacity,
+      selectionPulse: state.selectionPulse,
       setColourPalette: state.setColourPalette,
       setTheme: state.setTheme,
       setCustomColours: state.setCustomColours,
@@ -53,6 +56,7 @@ const Settings = () => {
       setFontSizeFactorCentreMarks: state.setFontSizeFactorCentreMarks,
       setPenWidth: state.setPenWidth,
       setPenOpacity: state.setPenOpacity,
+      setSelectionPulse: state.setSelectionPulse,
     })),
   )
 
@@ -256,6 +260,20 @@ const Settings = () => {
           defaultValue={DEFAULT_FONTSIZEFACTOR}
           valueToDescription={fontSizeValueToDescription}
         />
+      </div>
+
+      <h3>Animation</h3>
+      <div className="mb-5 flex items-start relative leading-4">
+        <div className="h-4 flex items-center">
+          <input
+            id="selection-pulse"
+            type="checkbox"
+            className="cursor-default w-[1em] h-[1em] appearance-none border border-fg/50 rounded-mini mr-1 checked:border-primary checked:border-[0.2rem] checked:bg-primary transition-colors"
+            checked={selectionPulse === true}
+            onChange={e => setSelectionPulse(e.currentTarget.checked)}
+          />
+        </div>
+        <label htmlFor="selection-pulse">Selection pulse</label>
       </div>
 
       <h3>Pen</h3>

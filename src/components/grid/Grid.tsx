@@ -230,7 +230,9 @@ const Grid = ({
   const errorElements = useRef<ColourElement[]>([])
   const penLineElements = useRef<PenLineElement[]>([])
   const penElements = useRef<PenElement[]>([])
-  const [rippleRedConflicts, setRippleRedConflicts] = useState<Set<number>>(new Set())
+  const [rippleRedConflicts, setRippleRedConflicts] = useState<Set<number>>(
+    new Set(),
+  )
   const [rippleCells, setRippleCells] = useState<Set<number>>(new Set())
 
   const renderLoopStarted = useRef(0)
@@ -251,6 +253,7 @@ const Grid = ({
     fontSizeFactorCentreMarks,
     penWidth,
     penOpacity,
+    selectionPulse,
   } = useSettings(
     useShallow(state => ({
       colourPalette: state.colourPalette,
@@ -263,6 +266,7 @@ const Grid = ({
       fontSizeFactorCentreMarks: state.fontSizeFactorCentreMarks,
       penWidth: state.penWidth,
       penOpacity: state.penOpacity,
+      selectionPulse: state.selectionPulse,
     })),
   )
 
@@ -1569,6 +1573,13 @@ const Grid = ({
   ])
 
   useEffect(() => {
+    if (selectionPulse !== true) {
+      rippleCycleDuration.current = 0
+      setRippleCells(new Set())
+      setRippleRedConflicts(new Set())
+      return
+    }
+
     let cleanup: (() => void) | undefined
     let loop: number | undefined
 
@@ -1588,7 +1599,7 @@ const Grid = ({
         window.clearTimeout(loop)
       }
     }
-  }, [triggerSelectionRipple])
+  }, [selectionPulse, triggerSelectionRipple])
 
   useEffect(() => {
     if (app === undefined) {
