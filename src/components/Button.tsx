@@ -28,10 +28,10 @@ const Button = ({
       tabIndex={disabled ? -1 : 0}
       aria-disabled={disabled}
       className={clsx(
-        "flex flex-1 text-fg rounded justify-center items-center select-none leading-4 relative focus:outline-hidden transition-colors duration-100 ease-linear",
+        "flex flex-1 text-fg rounded justify-center items-center select-none leading-4 relative focus:outline-hidden",
         disabled
           ? "cursor-not-allowed opacity-50"
-          : "cursor-pointer hover:bg-button-hover hover:active:bg-primary hover:active:text-bg hover:active:transition-none",
+          : "cursor-pointer hover:bg-button-hover",
         noPadding ? "p-0" : "p-1",
         active ? "bg-button-active" : "bg-grey-700",
       )}
