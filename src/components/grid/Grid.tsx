@@ -14,7 +14,7 @@ import {
 } from "../lib/Actions"
 import { MODE_PEN } from "../lib/Modes"
 import { getRGBColor } from "../lib/colorutils"
-import { hasFog, ktoxy, unionCells, xytok } from "../lib/utils"
+import { hasFog, ktoxy, unionCells } from "../lib/utils"
 import { Arrow, DataCell, Line } from "../types/Data"
 import ArrowElement from "./ArrowElement"
 import BackgroundImageElement from "./BackgroundImageElement"
@@ -52,7 +52,6 @@ import {
   useEffect,
   useMemo,
   useRef,
-  useState,
 } from "react"
 import { useShallow } from "zustand/react/shallow"
 
@@ -64,7 +63,6 @@ const FONT_SIZE_CORNER_MARKS_LOW_DPI = 28
 const FONT_SIZE_CENTRE_MARKS_HIGH_DPI = 29
 const FONT_SIZE_CENTRE_MARKS_LOW_DPI = 29
 const MAX_RENDER_LOOP_TIME = 500
-const RIPPLE_LOOP_PAUSE_MS = 4000
 
 function hasCageValue(x: number, y: number, cages: GridCage[]): boolean {
   for (let cage of cages) {
@@ -230,11 +228,8 @@ const Grid = ({
   const errorElements = useRef<ColourElement[]>([])
   const penLineElements = useRef<PenLineElement[]>([])
   const penElements = useRef<PenElement[]>([])
-  const [rippleRedConflicts, setRippleRedConflicts] = useState<Set<number>>(new Set())
-  const [rippleCells, setRippleCells] = useState<Set<number>>(new Set())
 
   const renderLoopStarted = useRef(0)
-  const rippleCycleDuration = useRef(0)
   const rendering = useRef(false)
 
   const game: GameState = useGame()
@@ -479,99 +474,6 @@ const Grid = ({
       })
     }
   }
-
-  const peerCells = useCallback(
-    (origin: number): Set<number> => {
-      let [ox, oy] = ktoxy(origin)
-      let peers = new Set<number>()
-      game.data.cells[oy]?.forEach((_cell, x) => peers.add(xytok(x, oy)))
-      game.data.cells.forEach((row, y) => {
-        if (row[ox] !== undefined) {
-          peers.add(xytok(ox, y))
-        }
-      })
-      for (let region of game.data.regions) {
-        let cells = flatten(unionCells(region))
-        if (cells.some(cell => xytok(cell[1], cell[0]) === origin)) {
-          cells.forEach(cell => peers.add(xytok(cell[1], cell[0])))
-        }
-      }
-      peers.delete(origin)
-      return peers
-    },
-    [game.data.cells, game.data.regions],
-  )
-
-  const triggerSelectionRipple = useCallback(() => {
-    let origin = [...game.selection].pop()
-    if (origin === undefined) {
-      rippleCycleDuration.current = 0
-      setRippleRedConflicts(new Set())
-      setRippleCells(new Set())
-      return
-    }
-    let digit = game.digits.get(origin)?.digit
-    if (digit === undefined) {
-      rippleCycleDuration.current = 0
-      setRippleRedConflicts(new Set())
-      setRippleCells(new Set())
-      return
-    }
-    let originK = origin
-    let peers = [...peerCells(originK)]
-    let conflicts = peers.filter(k => game.digits.get(k)?.digit === digit)
-    let [ox, oy] = ktoxy(originK)
-    let waves = peers.reduce((acc, k) => {
-      let [x, y] = ktoxy(k)
-      let distance = Math.max(Math.abs(x - ox), Math.abs(y - oy))
-      if (!acc.has(distance)) {
-        acc.set(distance, [])
-      }
-      acc.get(distance)!.push(k)
-      return acc
-    }, new Map<number, number[]>())
-    let maxDistance = Math.max(1, ...waves.keys())
-    setRippleRedConflicts(new Set())
-    setRippleCells(new Set([origin]))
-    let timeouts: number[] = []
-    for (let [distance, cells] of waves) {
-      timeouts.push(
-        window.setTimeout(() => {
-          setRippleCells(previous => new Set([...previous, ...cells]))
-        }, distance * 140),
-      )
-    }
-    timeouts.push(
-      window.setTimeout(
-        () => setRippleRedConflicts(new Set(conflicts)),
-        maxDistance * 140,
-      ),
-    )
-    for (let distance = maxDistance; distance >= 1; --distance) {
-      let cells = waves.get(distance) ?? []
-      timeouts.push(
-        window.setTimeout(
-          () =>
-            setRippleCells(previous => {
-              let next = new Set(previous)
-              cells.forEach(cell => next.delete(cell))
-              return next
-            }),
-          maxDistance * 140 + 700 + (maxDistance - distance) * 140,
-        ),
-      )
-    }
-    rippleCycleDuration.current = maxDistance * 280 + 1450
-    timeouts.push(
-      window.setTimeout(() => {
-        setRippleCells(new Set())
-        setRippleRedConflicts(new Set())
-      }, rippleCycleDuration.current),
-    )
-    return () => {
-      timeouts.forEach(timeout => window.clearTimeout(timeout))
-    }
-  }, [game.digits, game.selection, peerCells])
 
   const onPointerUp = useCallback(() => {
     let result = penElements.current[0].onPointerUp()
@@ -1218,11 +1120,7 @@ const Grid = ({
             isLightColour(highlightColour) &&
             theme !== "dark" &&
             theme !== "sudocle-dark"
-          e.fill = rippleRedConflicts.has(e.k)
-            ? 0xd12c2c
-            : useDarkTextOnHighlight
-              ? DARK_TEXT_ON_LIGHT_HIGHLIGHT
-              : fill
+          e.fill = useDarkTextOnHighlight ? DARK_TEXT_ON_LIGHT_HIGHLIGHT : fill
           e.visible = true
 
           let com = cornerMarks.get(e.k)
@@ -1271,7 +1169,6 @@ const Grid = ({
     game.fogRaster,
     game.penLines,
     game.selection,
-    rippleRedConflicts,
     theme,
   ])
 
@@ -1552,7 +1449,6 @@ const Grid = ({
       )
       s.visible =
         game.hintCellPicker ||
-        rippleCells.has(s.k) ||
         game.selection.has(s.k) ||
         (digit !== undefined && selectedDigits.has(digit)) ||
         hasSelectedNote
@@ -1564,31 +1460,8 @@ const Grid = ({
     game.digits,
     game.hintCellPicker,
     game.selection,
-    rippleCells,
     renderNow,
   ])
-
-  useEffect(() => {
-    let cleanup: (() => void) | undefined
-    let loop: number | undefined
-
-    function runRippleLoop() {
-      cleanup?.()
-      cleanup = triggerSelectionRipple()
-      loop = window.setTimeout(
-        runRippleLoop,
-        rippleCycleDuration.current + RIPPLE_LOOP_PAUSE_MS,
-      )
-    }
-
-    runRippleLoop()
-    return () => {
-      cleanup?.()
-      if (loop !== undefined) {
-        window.clearTimeout(loop)
-      }
-    }
-  }, [triggerSelectionRipple])
 
   useEffect(() => {
     if (app === undefined) {
