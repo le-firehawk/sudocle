@@ -38,8 +38,80 @@ function shuffle<T>(values: T[], random: () => number): T[] {
   return shuffled
 }
 
-function pattern(row: number, column: number): number {
-  return (row * 3 + Math.floor(row / 3) + column) % 9
+function canPlaceValue(
+  grid: (number | undefined)[][],
+  x: number,
+  y: number,
+  value: number,
+): boolean {
+  let boxStartX = Math.floor(x / 3) * 3
+  let boxStartY = Math.floor(y / 3) * 3
+  for (let index = 0; index < 9; index++) {
+    if (grid[y][index] === value || grid[index][x] === value) {
+      return false
+    }
+  }
+  for (let dy = 0; dy < 3; dy++) {
+    for (let dx = 0; dx < 3; dx++) {
+      if (grid[boxStartY + dy][boxStartX + dx] === value) {
+        return false
+      }
+    }
+  }
+  return true
+}
+
+function buildSolvedGrid(random: () => number): number[][] {
+  let grid: (number | undefined)[][] = Array.from({ length: 9 }, () =>
+    Array.from({ length: 9 }, () => undefined),
+  )
+
+  function fill(): boolean {
+    let bestX = -1
+    let bestY = -1
+    let bestCandidates: number[] | undefined
+
+    for (let y = 0; y < 9; y++) {
+      for (let x = 0; x < 9; x++) {
+        if (grid[y][x] !== undefined) {
+          continue
+        }
+        let candidates = ALL_DIGITS.filter(value =>
+          canPlaceValue(grid, x, y, value),
+        )
+        if (candidates.length === 0) {
+          return false
+        }
+        if (
+          bestCandidates === undefined ||
+          candidates.length < bestCandidates.length ||
+          (candidates.length === bestCandidates.length && random() < 0.5)
+        ) {
+          bestX = x
+          bestY = y
+          bestCandidates = candidates
+        }
+      }
+    }
+
+    if (bestCandidates === undefined) {
+      return true
+    }
+
+    for (let value of shuffle(bestCandidates, random)) {
+      grid[bestY][bestX] = value
+      if (fill()) {
+        return true
+      }
+      grid[bestY][bestX] = undefined
+    }
+    return false
+  }
+
+  if (!fill()) {
+    throw new Error("Unable to build a solved seed puzzle grid")
+  }
+  return grid.map(row => row.map(value => value!))
 }
 
 function buildRegions(): [number, number][][] {
@@ -91,17 +163,41 @@ export const SEED_DIFFICULTY_GIVENS: Record<SeedDifficulty, number> = {
 type SeedDifficultyProfile = {
   targetGivens: number
   maximumScore: number
+  maximumBoxLineTriples: number
+  maximumUnitGivens: number
 }
 
 const SEED_DIFFICULTY_PROFILES: Record<SeedDifficulty, SeedDifficultyProfile> =
   {
-    beginner: { targetGivens: 49, maximumScore: 90 },
-    intermediate: { targetGivens: 41, maximumScore: 210 },
-    hard: { targetGivens: 30, maximumScore: 520 },
-    expert: { targetGivens: 24, maximumScore: 900 },
+    beginner: {
+      targetGivens: 49,
+      maximumScore: 90,
+      maximumBoxLineTriples: 7,
+      maximumUnitGivens: 8,
+    },
+    intermediate: {
+      targetGivens: 41,
+      maximumScore: 210,
+      maximumBoxLineTriples: 4,
+      maximumUnitGivens: 7,
+    },
+    hard: {
+      targetGivens: 30,
+      maximumScore: 520,
+      maximumBoxLineTriples: 2,
+      maximumUnitGivens: 6,
+    },
+    expert: {
+      targetGivens: 24,
+      maximumScore: 900,
+      maximumBoxLineTriples: 1,
+      maximumUnitGivens: 5,
+    },
     hellish: {
       targetGivens: 17,
       maximumScore: Number.POSITIVE_INFINITY,
+      maximumBoxLineTriples: 0,
+      maximumUnitGivens: 4,
     },
   }
 
@@ -313,12 +409,56 @@ function puzzleDifficultyScore(
   }
 }
 
+function countGivenCellsInUnit(cells: Set<number>, unit: number): number {
+  return unitCells(unit).filter(([x, y]) => cells.has(y * 9 + x)).length
+}
+
+function countGivenBoxLineTriples(cells: Set<number>): number {
+  let completeTriples = 0
+  for (let boxY = 0; boxY < 3; boxY++) {
+    for (let boxX = 0; boxX < 3; boxX++) {
+      for (let localY = 0; localY < 3; localY++) {
+        let y = boxY * 3 + localY
+        if ([0, 1, 2].every(dx => cells.has(y * 9 + boxX * 3 + dx))) {
+          completeTriples++
+        }
+      }
+      for (let localX = 0; localX < 3; localX++) {
+        let x = boxX * 3 + localX
+        if ([0, 1, 2].every(dy => cells.has((boxY * 3 + dy) * 9 + x))) {
+          completeTriples++
+        }
+      }
+    }
+  }
+  return completeTriples
+}
+
+function hasBalancedClueLayout(
+  cells: Set<number>,
+  profile: SeedDifficultyProfile,
+): boolean {
+  if (cells.size > profile.targetGivens + 9) {
+    return true
+  }
+  if (countGivenBoxLineTriples(cells) > profile.maximumBoxLineTriples) {
+    return false
+  }
+  for (let unit = 0; unit < 27; unit++) {
+    if (countGivenCellsInUnit(cells, unit) > profile.maximumUnitGivens) {
+      return false
+    }
+  }
+  return true
+}
+
 function isSuitableForDifficulty(
   cells: Set<number>,
   solution: number[][],
   profile: SeedDifficultyProfile,
 ): boolean {
   return (
+    hasBalancedClueLayout(cells, profile) &&
     hasUniqueSolution(cells, solution) &&
     puzzleDifficultyScore(cells, solution) <= profile.maximumScore
   )
@@ -333,16 +473,7 @@ export function buildSeedPuzzle(
   difficulty: SeedDifficulty = "hard",
 ): Data {
   let random = mulberry32(xmur3(seed)())
-  let rows = shuffle([0, 1, 2], random).flatMap(group =>
-    shuffle([0, 1, 2], random).map(row => group * 3 + row),
-  )
-  let columns = shuffle([0, 1, 2], random).flatMap(group =>
-    shuffle([0, 1, 2], random).map(column => group * 3 + column),
-  )
-  let digits = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9], random)
-  let solution = rows.map(row =>
-    columns.map(column => digits[pattern(row, column)]),
-  )
+  let solution = buildSolvedGrid(random)
   let visibleCells = new Set(Array.from({ length: 81 }, (_, index) => index))
   let profile = SEED_DIFFICULTY_PROFILES[difficulty]
   for (let cell of shuffle(Array.from(visibleCells), random)) {
